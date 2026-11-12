@@ -3,8 +3,12 @@
 import { useEffect, useState } from "react";
 import Script from "next/script";
 
-/** Google Tag Manager's container for the site. */
-const GTM_ID = "GTM-5TNDKX33";
+/**
+ * Google Tag Manager's container for the site, from NEXT_PUBLIC_GTM_ID. Unset,
+ * the site loads no analytics and shows no cookie banner: there is nothing to
+ * consent to.
+ */
+const GTM_ID = (process.env.NEXT_PUBLIC_GTM_ID ?? "").trim();
 const STORAGE_KEY = "ziki-cookie-consent";
 /** Ask again after this long, so a choice doesn't last forever. */
 const CONSENT_MAX_AGE_MS = 180 * 24 * 60 * 60 * 1000;
@@ -70,6 +74,9 @@ export function ConsentBanner() {
     }
     setChoice(next);
   }
+
+  // No container configured: no tag, so no banner either.
+  if (!GTM_ID) return null;
 
   return (
     <>

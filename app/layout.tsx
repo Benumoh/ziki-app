@@ -111,7 +111,7 @@ export default async function RootLayout({
             </ConfirmProvider>
           </ToastProvider>
         </ThemePreference>
-        {/* The cookie banner, and Google Tag Manager (GTM-5TNDKX33) behind it: it loads only once a visitor accepts. */}
+        {/* The cookie banner, and Google Tag Manager (NEXT_PUBLIC_GTM_ID) behind it: it loads only once a visitor accepts. */}
         <ConsentBanner />
       </body>
     </html>
