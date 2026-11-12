@@ -296,8 +296,10 @@ export function AuthSplitFrame({
   mark?: boolean;
 }) {
   return (
-    <div className="zk-motion ziki-auth-frame flex min-h-screen flex-col bg-zk-bg text-zk-text lg:flex-row">
-      <BrandPanel />
+    // #onboarding: the form comes first in the page, so phones show it before
+    // the brand panel and keyboard focus reaches it first; wide screens still
+    // draw the brand panel on the left.
+    <div className="zk-motion ziki-auth-frame flex min-h-screen flex-col bg-zk-bg text-zk-text lg:flex-row-reverse">
       <section
         aria-label={panelLabel}
         className="relative flex w-full flex-col items-center justify-center gap-7 px-6 py-10 sm:px-8 lg:flex-[1_1_480px]"
@@ -331,6 +333,7 @@ export function AuthSplitFrame({
 
         <AuthFooter />
       </section>
+      <BrandPanel />
     </div>
   );
 }

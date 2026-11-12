@@ -65,7 +65,10 @@ async function authRateLimited(
   action: AuthRateLimitAction,
   email: string | null,
 ): Promise<{ error: string } | null> {
-  const ip = clientIpFrom(await headers());
+  // Wrap Next's headers so clientIpFrom reads them as headers, not as a request
+  // (`"headers" in` matched the object and broke signup and password resets).
+  const hdrs = await headers();
+  const ip = clientIpFrom({ get: (name: string) => hdrs.get(name) });
   const result = await consumeAuthRateLimit(action, { email, ip });
   return result.allowed ? null : { error: RATE_LIMIT_MESSAGE };
 }

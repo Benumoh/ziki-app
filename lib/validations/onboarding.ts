@@ -1,0 +1,28 @@
+import { z } from "zod";
+import { FEEDBACK_COMMENT_MAX, LAST_ONBOARDING_STEP, ONBOARDING_GOALS } from "@/lib/onboarding-flow";
+
+/** #onboarding: saving where someone is in the welcome flow. */
+export const onboardingProgressSchema = z.object({
+  step: z.coerce.number().int().min(0).max(LAST_ONBOARDING_STEP),
+  goal: z.enum(ONBOARDING_GOALS).nullable().optional(),
+});
+
+/** #onboarding: finishing the flow on the first-action step needs the goal it was built for. */
+export const onboardingCompleteSchema = z.object({
+  goal: z.enum(ONBOARDING_GOALS, { error: "Choose what you'd like to do first." }),
+});
+
+/** #onboarding: the first-experience feedback prompt. */
+export const onboardingFeedbackSchema = z.object({
+  rating: z.coerce
+    .number({ error: "Choose a rating from 1 to 5." })
+    .int("Choose a rating from 1 to 5.")
+    .min(1, "Choose a rating from 1 to 5.")
+    .max(5, "Choose a rating from 1 to 5."),
+  comment: z
+    .string()
+    .trim()
+    .max(FEEDBACK_COMMENT_MAX, `Keep it under ${FEEDBACK_COMMENT_MAX} characters.`)
+    .optional()
+    .transform((value) => (value ? value : null)),
+});

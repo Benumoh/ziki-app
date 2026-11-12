@@ -2,6 +2,7 @@
 
 import { useFormStatus } from "react-dom";
 import { googleSignInAction } from "@/app/actions/auth";
+import { trackFunnelEvent } from "@/lib/analytics-client";
 
 function GoogleGlyph() {
   return (
@@ -43,11 +44,18 @@ function SubmitButton() {
 
 export function GoogleSignInButton({
   callbackUrl = "/home",
+  signup = false,
 }: {
   callbackUrl?: string;
+  /** On the sign-up page, counts the click as a signup start (#onboarding). */
+  signup?: boolean;
 }) {
   return (
-    <form action={googleSignInAction} className="w-full">
+    <form
+      action={googleSignInAction}
+      className="w-full"
+      onSubmit={signup ? () => trackFunnelEvent("signup_started", { method: "google" }) : undefined}
+    >
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
       <SubmitButton />
     </form>

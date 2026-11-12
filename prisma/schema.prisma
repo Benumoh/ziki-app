@@ -268,6 +268,10 @@ enum GoalAllocationTarget {
 model User {
   featurePlans              FeaturePlan[]
   savedIssueViews           SavedIssueView[]
+  /// #onboarding: first-run welcome progress, first-experience feedback and funnel events.
+  onboarding                UserOnboarding?
+  onboardingFeedback        OnboardingFeedback?
+  onboardingEvents          OnboardingEvent[]
   id                        String                  @id @default(cuid())
   securityVerifications SecurityVerification[]
   securityFindingsReported  SecurityFinding[]       @relation("SecurityFindingReporter")
@@ -3434,4 +3438,69 @@ model LoginHistory {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+/// #onboarding: what a newcomer said they came to do on the welcome flow.
+enum OnboardingGoal {
+  explore_projects
+  contribute_issues
+  work_with_agents
+}
+
+/// #onboarding: the signup-to-first-action funnel. No personal data beyond the user id.
+enum OnboardingEventName {
+  signup_completed
+  onboarding_started
+  onboarding_completed
+  onboarding_skipped
+  first_action
+  feedback_submitted
+  feedback_dismissed
+}
+
+/// #onboarding: one row per person once the welcome flow has started. Existing
+/// accounts were backfilled as completed, so only newcomers see the flow.
+model UserOnboarding {
+  userId               String          @id
+  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// The step to resume on: 0 what Ziki is, 1 pick a goal, 2 first action.
+  step                 Int             @default(0)
+  goal                 OnboardingGoal?
+  startedAt            DateTime        @default(now())
+  completedAt          DateTime?
+  skippedAt            DateTime?
+  firstActionAt        DateTime?
+  /// "Maybe later" on the feedback prompt hides it until this time.
+  feedbackSnoozedUntil DateTime?
+  feedbackSnoozeCount  Int             @default(0)
+  /// Set when the prompt should never show again (dismissed twice, or a backfilled account).
+  feedbackClosedAt     DateTime?
+  updatedAt            DateTime        @updatedAt
+}
+
+/// #onboarding: a person's first-experience rating. One per person; read by super admins only.
+model OnboardingFeedback {
+  id        String          @id @default(cuid())
+  userId    String          @unique
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 1 to 5, enforced by a check constraint too.
+  rating    Int
+  comment   String?
+  goal      OnboardingGoal?
+  createdAt DateTime        @default(now())
+
+  @@index([createdAt])
+}
+
+/// #onboarding: one funnel step reached by one person.
+model OnboardingEvent {
+  id        String              @id @default(cuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      OnboardingEventName
+  goal      OnboardingGoal?
+  createdAt DateTime            @default(now())
+
+  @@index([name, createdAt])
+  @@index([userId])
 }

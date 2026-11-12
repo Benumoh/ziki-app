@@ -13,7 +13,8 @@ export const OPEN_CONSENT_EVENT = "ziki:open-cookie-consent";
 
 type Choice = "granted" | "denied";
 
-function readChoice(): Choice | null {
+/** The visitor's saved cookie choice, or null when they haven't answered (or it expired). */
+export function readChoice(): Choice | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;

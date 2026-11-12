@@ -25,6 +25,9 @@ import { AgentsDock, type DockAgent } from "@/components/agents-dock";
 import { appVersionLabel } from "@/lib/deployed-version";
 import { agentActivity, agentEarnings } from "@/lib/points/agent-earnings";
 import { headerEarnings } from "@/lib/earnings";
+import { FirstFeedbackPrompt } from "@/components/first-feedback-prompt";
+import { WELCOME_PATH } from "@/lib/onboarding-flow";
+import { shouldShowFeedbackPrompt } from "@/lib/onboarding-state";
 
 async function getOrganisationProjects(organisationId: string) {
   return prisma.project.findMany({
@@ -247,6 +250,16 @@ export default async function AppLayout({
     console.error("[layout] shortcut setting failed", error);
   }
 
+  // #onboarding: the first-experience feedback prompt, after the welcome flow.
+  let showFeedbackPrompt = false;
+  if (requestPath !== WELCOME_PATH) {
+    try {
+      showFeedbackPrompt = await shouldShowFeedbackPrompt(user.id);
+    } catch (error) {
+      console.error("[layout] feedback prompt check failed", error);
+    }
+  }
+
   return (
     // data-app-shell marks the signed-in app shell for the on-screen guide.
     <div data-app-shell="" className="flex min-h-screen flex-col bg-zk-bg">
@@ -283,6 +296,7 @@ export default async function AppLayout({
       </div>
       {/* The agents dock keeps the page's foot clear of its floor line itself, as tall as what stands on it, and draws nothing (no spacer either) where it doesn't help. */}
       <AgentsDock agents={dockAgents} defaultProjectSlug={defaultProjectSlug} memberCount={memberCount} />
+      {showFeedbackPrompt ? <FirstFeedbackPrompt /> : null}
       <FocusMainOnNavigate />
       <KeyboardShortcuts
         enabled={shortcutsEnabled}

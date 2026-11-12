@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { signupAction } from "@/app/actions/auth";
+import { trackFunnelEvent } from "@/lib/analytics-client";
 import { Button } from "@/components/ui/button";
 import { FieldError, useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,9 @@ export function SignupForm({
         formData.set("password", password);
         formData.set("confirmPassword", confirmPassword);
         formData.set("callbackUrl", callbackUrl);
+        // A second press while the first is still on its way does nothing.
+        if (pending) return;
+        trackFunnelEvent("signup_started", { method: "password" });
         startTransition(async () => {
           try {
             const result = await signupAction(undefined, formData);
@@ -138,7 +142,7 @@ export function SignupForm({
       ) : null}
       <Button
         type="submit"
-        className="h-12 w-full bg-electric-blue-strong text-base font-bold text-white hover:bg-electric-blue focus-visible:ring-electric-blue"
+        className="h-12 w-full bg-electric-blue-strong! text-base font-bold text-white hover:bg-electric-blue! focus-visible:ring-electric-blue"
         disabled={pending}
       >
         {pending ? "Creating account…" : "Create account"}

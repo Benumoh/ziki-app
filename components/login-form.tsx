@@ -173,7 +173,7 @@ export function LoginForm({
       ) : null}
       <Button
         type="submit"
-        className="h-12 w-full bg-electric-blue-strong text-base font-bold text-white hover:bg-electric-blue focus-visible:ring-electric-blue"
+        className="h-12 w-full bg-electric-blue-strong! text-base font-bold text-white hover:bg-electric-blue! focus-visible:ring-electric-blue"
         disabled={pending}
       >
         {pending ? "Signing in…" : needsCode ? "Verify and sign in" : "Sign in"}
