@@ -12,7 +12,7 @@ import { earnBannerLine, newestOpenProjectFor, type EarnBannerProject } from "@/
 import { newIssueHref } from "@/lib/reported-from";
 import "./issues.css";
 import { Avatar } from "@/components/avatar";
-import { Suspense, type CSSProperties } from "react";
+import { Suspense } from "react";
 import { RememberIssueList } from "@/components/back-to-list";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -1174,6 +1174,8 @@ export async function IssuesList({
         null,
       )
     : null;
+  // Drawn only when no blocked agent's notice comes first (#agent-work-gate).
+  const gettingStartedShown = Boolean(gettingStarted && projectLinks && unconfiguredAgents.length === 0);
   if (isIdeasView && userId) {
     try {
       earnProject = await newestOpenProjectFor(prisma, userId);
@@ -1193,7 +1195,7 @@ export async function IssuesList({
         {isIdeasView && !isDeletedView && earnProject ? <EarnPanel project={earnProject} line={earnBannerLine(earnProject)} /> : null}
 
         <AgentSetupNotice agents={unconfiguredAgents} />
-        {gettingStarted && projectLinks && unconfiguredAgents.length === 0 ? (
+        {gettingStartedShown && gettingStarted && projectLinks ? (
           <GettingStarted
             slug={slug}
             siteUrl={projectLinks.siteUrl}
@@ -1558,16 +1560,17 @@ export async function IssuesList({
     {/* On a phone the icons take their own row above the stages, so they never cover them. */}
     <div className={`mx-auto mb-4 flex min-h-8 w-full flex-wrap items-end justify-between gap-x-6 gap-y-2 max-sm:mb-3 max-sm:flex-col-reverse max-sm:flex-nowrap max-sm:items-stretch max-sm:gap-1 ${isIdeasView ? "max-w-[920px]" : "max-w-6xl"}`}>
       {!isDeletedView ? (
-        // At least as wide as its tabs need (about 120px each), so the actions wrap below rather than squeeze them.
-        // (A width only from sm: on a phone the row is a column, where a basis would be a height.)
-        <div className="min-w-0 grow sm:basis-[var(--tabs-basis)]" style={{ "--tabs-basis": `${pipelineStages.length * 120}px` } as CSSProperties}>
+        // As wide as its tabs: the actions share the row while they fit, else wrap below.
+        <div className="min-w-0">
           <PipelineSteps stages={pipelineStages} />
         </div>
       ) : null}
-      <div className="flex shrink-0 items-center gap-2 max-sm:self-end">
-        {/* The site and code addresses, then Feature plans, Goals, Project notes and the settings page.
-            While Getting started asks for the site, its icon (and its "missing" dot) waits: one ask at a time. */}
-        {projectLinks && !isDeletedView && !(gettingStarted && !projectLinks.siteUrl) ? (
+      {/* ml-auto keeps the actions at the right edge, on the tabs' row or wrapped below them. */}
+      <div className="ml-auto flex shrink-0 items-center gap-2 max-sm:self-end">
+        {/* The site and code addresses, then Feature plans, Goals, Project notes and the settings page. The site
+            icon always shows: Getting started can be hidden or give way to another notice, and it must not be the
+            only way to add the site. */}
+        {projectLinks && !isDeletedView ? (
           <ProjectLinks
             slug={slug}
             siteUrl={projectLinks.siteUrl}
@@ -1575,7 +1578,7 @@ export async function IssuesList({
             canEdit={canEditProjectLinks}
             // #agent-work-gate: a blocked agent comes first; the site URL ask waits (the icon still opens it).
             // #getting-started asks for the site in its own list, so the panel doesn't open by itself beside it.
-            askOnLoad={isIdeasView && unconfiguredAgents.length === 0 && !gettingStarted}
+            askOnLoad={isIdeasView && unconfiguredAgents.length === 0 && !gettingStartedShown}
           />
         ) : null}
         {!isDeletedView ? (
