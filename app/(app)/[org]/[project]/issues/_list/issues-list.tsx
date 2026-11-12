@@ -1110,14 +1110,12 @@ export async function IssuesList({
       ) : null}
       {/* #ideas-welcome: with no ideas yet the welcome's own box is the one way in, so the toolbar
           (Add Idea, search over nothing) isn't drawn above it. */}
-      {ideasWelcomeShown ? (
-        <h1 className="sr-only">Issues</h1>
-      ) : (
+      {ideasWelcomeShown ? null : (
       <div className="issues-heading flex flex-wrap items-start justify-between gap-4">
         {/* flex-1: the Add Idea chat box opens in this bar and takes its width. */}
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          {/* No visible title: the stages above say where you are. */}
-          <h1 className="sr-only">{isDeletedView ? "Deleted Issues" : "Issues"}</h1>
+          {/* The page's visible title is the project's name above the stages; the admin view keeps its own. */}
+          {isDeletedView ? <h1 className="sr-only">Deleted Issues</h1> : null}
           {isDeletedView || allProjects || !isFirstRun ? (
             <div className="flex flex-wrap items-center gap-2">
               {/* Desktop: Add Idea at the far left of the toolbar. */}
@@ -1554,6 +1552,13 @@ export async function IssuesList({
     <Suspense fallback={null}>
       <RememberIssueList />
     </Suspense>
+    {/* The project's name as the page's title (#getting-started): the breadcrumb alone was too small to say
+        which project you are in. */}
+    {!isDeletedView ? (
+      <div className={`mx-auto mb-3 w-full ${isIdeasView ? "max-w-[920px]" : "max-w-6xl"}`}>
+        <h1 className="text-2xl font-extrabold tracking-tight text-zk-text max-sm:text-xl">{allProjects ? "All projects" : project.name}</h1>
+      </div>
+    ) : null}
     {/* One bar as wide as the panel below (#getting-started): the stage tabs at its left edge, the project's
         actions (site, Feature plans, Goals, Notes, settings) together at its right edge, so both line up with
         the panel. When the stages are many the actions wrap under them, still at the right. */}

@@ -75,8 +75,9 @@ export function GettingStarted({
   const [result, action, pending] = useActionState<ProjectActionResult | undefined, FormData>(saveProjectLinksAction, undefined);
   const [siteValue, setSiteValue] = useState("");
   const [submitted, setSubmitted] = useState("");
-  // Server render and first paint: hidden, so a hidden list never flashes up.
-  const hidden = useSyncExternalStore(subscribe, () => read(hiddenKey(slug)) === "1", () => true);
+  // Unknown on the server and the first paint (nothing is drawn), so neither the list nor its hidden line flashes up.
+  const visibility = useSyncExternalStore(subscribe, () => (read(hiddenKey(slug)) === "1" ? "hidden" : "shown"), () => "unknown");
+  const hidden = visibility === "hidden";
   const skippedRaw = useSyncExternalStore(subscribe, () => read(skippedKey(slug)) ?? "", () => "");
   const skipped = new Set(skippedRaw.split(",").filter(Boolean) as GettingStartedStepId[]);
   const [openId, setOpenId] = useState<GettingStartedStepId | null | undefined>(undefined);
@@ -89,9 +90,27 @@ export function GettingStarted({
   // Until someone opens or closes a step themselves, the current one is open.
   const open = openId === undefined ? current : openId;
 
-  if (hidden || gettingStartedFinished(steps, skipped)) return null;
+  if (visibility === "unknown" || gettingStartedFinished(steps, skipped)) return null;
 
   const doneCount = steps.filter((step) => step.done).length;
+
+  // Hidden: one quiet line in its place, so the list can always be brought back.
+  if (hidden) {
+    return (
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-dashed border-zk-border px-4 py-2.5 text-[13px] text-zk-text2 print:hidden">
+        <span>
+          Setup: <span className="tabular-nums">{doneCount} of {steps.length}</span> done
+        </span>
+        <button
+          type="button"
+          onClick={() => write(hiddenKey(slug), "")}
+          className="font-semibold text-zk-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-electric-blue"
+        >
+          Show setup checklist
+        </button>
+      </div>
+    );
+  }
 
   function skip(id: GettingStartedStepId) {
     write(skippedKey(slug), [...skipped, id].join(","));
