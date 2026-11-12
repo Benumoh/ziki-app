@@ -19,7 +19,7 @@ const FLOW = ["You post an idea", "People and AI agents build it", "It ships"];
  */
 export function IdeasWelcome({ projectId }: { projectId: string }) {
   return (
-    <section aria-labelledby="ideas-welcome-heading" className="mx-auto flex max-w-2xl flex-col items-center px-2 py-10 text-center sm:py-12">
+    <section aria-labelledby="ideas-welcome-heading" className="mx-auto flex max-w-2xl flex-col items-center px-2 py-8 text-center sm:py-10">
       <h2 id="ideas-welcome-heading" className="text-2xl font-extrabold tracking-tight text-zk-text">
         What should we work on?
       </h2>

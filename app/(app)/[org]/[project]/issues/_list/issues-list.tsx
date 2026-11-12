@@ -1093,6 +1093,8 @@ export async function IssuesList({
   const savedViewQuery = new URLSearchParams(currentQuery);
   savedViewQuery.set("sort", currentSort);
 
+  // The same condition IdeasList uses to show IdeasWelcome in place of the list.
+  const ideasWelcomeShown = ideasView === "new" && !qParam && !isDeletedView && ideaRows.length === 0;
   const headerContent = (
     <>
       {activeProject?.goal ? (
@@ -1106,6 +1108,11 @@ export async function IssuesList({
           <RichText content={activeProject.goal} className="mt-1 text-sm text-zk-text2" />
         </section>
       ) : null}
+      {/* #ideas-welcome: with no ideas yet the welcome's own box is the one way in, so the toolbar
+          (Add Idea, search over nothing) isn't drawn above it. */}
+      {ideasWelcomeShown ? (
+        <h1 className="sr-only">Issues</h1>
+      ) : (
       <div className="issues-heading flex flex-wrap items-start justify-between gap-4">
         {/* flex-1: the Add Idea chat box opens in this bar and takes its width. */}
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -1140,6 +1147,7 @@ export async function IssuesList({
           {!isDeletedView ? <IdeaChat projectId={project.id} types={tagTypes} className={isFirstRun ? "" : "md:hidden"} /> : null}
         </div>
       </div>
+      )}
       {!isIdeasView ? (
         <SavedIssueViews org={project.orgSlug} slug={project.slug} status={statusParam}
           query={savedViewQuery.toString()} views={savedViews} loadFailed={savedViewsFailed} />

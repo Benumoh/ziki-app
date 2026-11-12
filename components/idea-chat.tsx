@@ -180,7 +180,8 @@ export function IdeaChat({
                   send();
                 }
               }}
-              className="block max-h-[220px] min-h-[28px] w-full resize-none border-0 bg-transparent p-1 text-[15px] leading-6 text-zk-text placeholder:text-zk-muted focus:outline-none"
+              // The welcome's box opens two lines tall, so it reads as a place to write, not a search field.
+              className={`block max-h-[220px] w-full resize-none ${alwaysOpen ? "min-h-[56px]" : "min-h-[28px]"} border-0 bg-transparent p-1 text-[15px] leading-6 text-zk-text placeholder:text-zk-muted focus:outline-none`}
             />
             {uploads.length ? (
               <ul className="m-0 mt-1 flex list-none flex-wrap gap-1.5 p-0">
@@ -212,6 +213,12 @@ export function IdeaChat({
                 )}
                 {alwaysOpen ? "Attach files" : null}
               </button>
+              {/* Enter sends: say so, or a new person presses it for a new line and is surprised. */}
+              {alwaysOpen && text.trim() ? (
+                <span className="ml-auto mr-3 text-xs text-zk-muted max-sm:hidden">
+                  <kbd className="font-sans font-semibold text-zk-text2">Enter</kbd> to send · <kbd className="font-sans font-semibold text-zk-text2">Shift + Enter</kbd> for a new line
+                </span>
+              ) : null}
               <input ref={fileRef} type="file" multiple hidden onChange={(event) => { void attach(event.target.files); event.target.value = ""; }} />
               <button
                 type="button"
@@ -247,7 +254,7 @@ export function IdeaChat({
                       box?.setSelectionRange(example.text.length, example.text.length);
                     });
                   }}
-                  className="rounded-full border border-dashed border-zk-border px-3 py-1.5 text-[13px] font-medium text-zk-text2 hover:border-solid hover:bg-zk-chip hover:text-zk-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-electric-blue"
+                  className="rounded-full border border-zk-border bg-zk-surface px-3 py-1.5 text-[13px] font-medium text-zk-text2 transition-colors hover:border-electric-blue-strong/40 hover:bg-zk-tint hover:text-zk-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-electric-blue disabled:opacity-50"
                 >
                   {example.label}
                 </button>
