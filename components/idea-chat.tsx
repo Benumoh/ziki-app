@@ -238,9 +238,11 @@ export function IdeaChat({
             </div>
           </div>
           {examples?.length ? (
-            // Centred under the box, like the heading above and the steps below it.
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-              <span className="text-[13px] text-zk-muted">Try:</span>
+            // Centred under the box, like the heading above and the steps below it. The prompt has its own line,
+            // so the starters themselves sit centred rather than shifted right by a label beside them.
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <span className="text-[13px] text-zk-muted">Need a starting point? Pick one:</span>
+              <div className="flex flex-wrap items-center justify-center gap-2">
               {examples.map((example) => (
                 <button
                   key={example.label}
@@ -260,6 +262,7 @@ export function IdeaChat({
                   {example.label}
                 </button>
               ))}
+              </div>
             </div>
           ) : null}
         </div>
