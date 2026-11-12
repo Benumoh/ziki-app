@@ -264,6 +264,16 @@ export async function indexAllWorkItems(batchSize = 200, afterBatch?: () => Prom
   return totals;
 }
 
+// Typesense takes plain field names in query_by and each field's infix mode in
+// a parallel `infix` list; "title(infix:always)" is rejected as an unknown field.
+function typesenseQueryBy(spec: string): { queryBy: string; infix: Array<"off" | "always" | "fallback"> } {
+  const fields = spec.split(",").map((part) => {
+    const match = /^\s*([^()\s]+)\s*(?:\(\s*infix\s*:\s*(off|always|fallback)\s*\))?\s*$/.exec(part);
+    return { name: match?.[1] ?? part.trim(), infix: (match?.[2] ?? "off") as "off" | "always" | "fallback" };
+  });
+  return { queryBy: fields.map((f) => f.name).join(","), infix: fields.map((f) => f.infix) };
+}
+
 export async function searchWorkItems(input: { query: string; kind: "bug" | "idea"; organisationId: string; projectId?: string; track?: string; includeDeleted?: boolean; page?: number; perPage?: number; sortBy?: string; queryBy?: string; extraFilters?: string[] }) {
   // A configured endpoint is not enough: until durable capture is enabled,
   // the collection may be stale or empty and PostgreSQL must remain the path.
@@ -276,8 +286,9 @@ export async function searchWorkItems(input: { query: string; kind: "bug" | "ide
   if (input.track) filters.push(`track:=${input.track}`);
   if (!input.includeDeleted) filters.push("isDeleted:=false");
   filters.push(...(input.extraFilters ?? []));
+  const { queryBy, infix } = typesenseQueryBy(input.queryBy ?? "title(infix:always),description(infix:always),numberText");
   const response = await getTypesenseClient().collections(WORK_ITEMS_COLLECTION).documents().search({
-    q: input.query, query_by: input.queryBy ?? "title(infix:always),description(infix:always),numberText", query_by_weights: input.queryBy ? (input.queryBy.includes(",") ? "10,3" : "10") : "10,3,1",
+    q: input.query, query_by: queryBy, infix, query_by_weights: input.queryBy ? (input.queryBy.includes(",") ? "10,3" : "10") : "10,3,1",
     filter_by: filters.join(" && "), page: input.page ?? 1,
     per_page: Math.min(input.perPage ?? 25, 250), prefix: false,
     ...(input.sortBy ? { sort_by: input.sortBy } : {}),
