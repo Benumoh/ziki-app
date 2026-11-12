@@ -267,7 +267,8 @@ describe("issue list layout", () => {
 
   it("falls back to PostgreSQL for issue text search when Typesense is unavailable", async () => {
     const html = await renderList({ q: "login", status: "all" });
-    expect(html).toContain("Issues");
+    // The page renders, titled with its project's name.
+    expect(html).toMatch(/<h1[^>]*>Acme Web<\/h1>/);
     expect(indexedSearch).toHaveBeenCalled();
     const rowQuery = findMany.mock.calls.at(-1)![0];
     expect(rowQuery.where).toMatchObject({ organisationId: "organisation-acme", projectId: "project-acme", track: "product" });

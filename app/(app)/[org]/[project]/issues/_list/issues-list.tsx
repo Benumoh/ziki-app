@@ -7,6 +7,7 @@ import { LocalTime } from "@/components/local-time";
 import { POSSIBLY_DELIVERED_STATUS, POSSIBLY_DELIVERED_WHERE, deliverySignals, type DeliverySignals } from "@/lib/possibly-delivered";
 import Link from "next/link";
 import { EarnPanel } from "@/components/earn-panel";
+import { GettingStarted } from "@/components/getting-started";
 import { earnBannerLine, newestOpenProjectFor, type EarnBannerProject } from "@/lib/earn-banner";
 import { newIssueHref } from "@/lib/reported-from";
 import "./issues.css";
@@ -1092,6 +1093,8 @@ export async function IssuesList({
   const savedViewQuery = new URLSearchParams(currentQuery);
   savedViewQuery.set("sort", currentSort);
 
+  // The same condition IdeasList uses to show IdeasWelcome in place of the list.
+  const ideasWelcomeShown = ideasView === "new" && !qParam && !isDeletedView && ideaRows.length === 0;
   const headerContent = (
     <>
       {activeProject?.goal ? (
@@ -1105,11 +1108,14 @@ export async function IssuesList({
           <RichText content={activeProject.goal} className="mt-1 text-sm text-zk-text2" />
         </section>
       ) : null}
+      {/* #ideas-welcome: with no ideas yet the welcome's own box is the one way in, so the toolbar
+          (Add Idea, search over nothing) isn't drawn above it. */}
+      {ideasWelcomeShown ? null : (
       <div className="issues-heading flex flex-wrap items-start justify-between gap-4">
         {/* flex-1: the Add Idea chat box opens in this bar and takes its width. */}
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          {/* No visible title: the stages above say where you are. */}
-          <h1 className="sr-only">{isDeletedView ? "Deleted Issues" : "Issues"}</h1>
+          {/* The page's visible title is the project's name above the stages; the admin view keeps its own. */}
+          {isDeletedView ? <h1 className="sr-only">Deleted Issues</h1> : null}
           {isDeletedView || allProjects || !isFirstRun ? (
             <div className="flex flex-wrap items-center gap-2">
               {/* Desktop: Add Idea at the far left of the toolbar. */}
@@ -1139,6 +1145,7 @@ export async function IssuesList({
           {!isDeletedView ? <IdeaChat projectId={project.id} types={tagTypes} className={isFirstRun ? "" : "md:hidden"} /> : null}
         </div>
       </div>
+      )}
       {!isIdeasView ? (
         <SavedIssueViews org={project.orgSlug} slug={project.slug} status={statusParam}
           query={savedViewQuery.toString()} views={savedViews} loadFailed={savedViewsFailed} />
@@ -1149,6 +1156,24 @@ export async function IssuesList({
   // Earnings (#earnings): the notice names the newest project open in Discover that this person isn't in yet, and
   // comes back for each new one; with nothing new to join it isn't shown.
   let earnProject: EarnBannerProject | null = null;
+  // Getting started (#getting-started): on New ideas (no search), for members, one numbered setup list in place of the
+  // site URL panel opening by itself and the next-step card. It hides itself once everything is done or skipped.
+  const showGettingStarted = Boolean(ideasView === "new" && !qParam && !isDeletedView && projectLinks && membershipRole && organisationId && userId);
+  const gettingStarted = showGettingStarted && organisationId && userId
+    ? await loadOrEmpty(
+        "getting started",
+        async () => {
+          const [anyIdeas, agentCount] = await Promise.all([
+            prisma.idea.count({ where: { projectId: project.id, isDeleted: false }, take: 1 }),
+            prisma.agent.count({ where: { ...activeIn(organisationId), ownerUserId: userId, revokedAt: null } }),
+          ]);
+          return { hasIdeas: anyIdeas > 0, agentCount };
+        },
+        null,
+      )
+    : null;
+  // Drawn only when no blocked agent's notice comes first (#agent-work-gate).
+  const gettingStartedShown = Boolean(gettingStarted && projectLinks && unconfiguredAgents.length === 0);
   if (isIdeasView && userId) {
     try {
       earnProject = await newestOpenProjectFor(prisma, userId);
@@ -1168,7 +1193,19 @@ export async function IssuesList({
         {isIdeasView && !isDeletedView && earnProject ? <EarnPanel project={earnProject} line={earnBannerLine(earnProject)} /> : null}
 
         <AgentSetupNotice agents={unconfiguredAgents} />
-        {nextStep && organisationId ? <OrganisationNextStepCard step={nextStep} organisationId={organisationId} /> : null}
+        {gettingStartedShown && gettingStarted && projectLinks ? (
+          <GettingStarted
+            slug={slug}
+            siteUrl={projectLinks.siteUrl}
+            repoUrl={projectLinks.repoUrl}
+            canEditLinks={canEditProjectLinks}
+            hasIdeas={gettingStarted.hasIdeas}
+            agentCount={gettingStarted.agentCount}
+            agentHref="/settings/connect"
+          />
+        ) : nextStep && organisationId ? (
+          <OrganisationNextStepCard step={nextStep} organisationId={organisationId} />
+        ) : null}
 
         {milestoneSummary ? (
           <section aria-label={`Milestone ${milestoneSummary.title}`} className="rounded-[20px] border border-zk-border bg-zk-surface p-5">
@@ -1495,34 +1532,49 @@ export async function IssuesList({
       </div>
   );
 
+  // The stage tabs across the top.
+  const pipelineStages = STAGE_GROUPS.flatMap((group, index) => {
+    const stage = {
+      label: group.label,
+      // Error is part of Merge, so the stage total counts it once.
+      count: group.statuses.reduce((sum, value) => sum + (value === ERROR_STATUS || value === POSSIBLY_DELIVERED ? 0 : statusCount(value)), 0),
+      href: statusLink(group.statuses[0]),
+      selected: index === stageIndex,
+    };
+    // Your Work only while something is assigned to you, Live only once something went live.
+    const conditional = index === YOUR_WORK_STAGE || index === LIVE_STAGE;
+    return !conditional || stage.count > 0 || stage.selected ? [stage] : [];
+  });
+
   return (
     <>
     {/* An issue's back arrow returns here, to this tab, filters and page. */}
     <Suspense fallback={null}>
       <RememberIssueList />
     </Suspense>
-    {/* The stages, centred, with Project notes at the right of the same row. The row is as wide
-        as the panel below, so the project icons line up with the panel's right edge. */}
+    {/* The project's name as the page's title (#getting-started): the breadcrumb alone was too small to say
+        which project you are in. */}
+    {!isDeletedView ? (
+      <div className={`mx-auto mb-3 w-full ${isIdeasView ? "max-w-[920px]" : "max-w-6xl"}`}>
+        <h1 className="text-2xl font-extrabold tracking-tight text-zk-text max-sm:text-xl">{allProjects ? "All projects" : project.name}</h1>
+      </div>
+    ) : null}
+    {/* One bar as wide as the panel below (#getting-started): the stage tabs at its left edge, the project's
+        actions (site, Feature plans, Goals, Notes, settings) together at its right edge, so both line up with
+        the panel. When the stages are many the actions wrap under them, still at the right. */}
     {/* On a phone the icons take their own row above the stages, so they never cover them. */}
-    <div className={`relative mx-auto mb-4 flex min-h-8 w-full items-start justify-center max-sm:mb-3 max-sm:flex-col-reverse max-sm:items-stretch max-sm:gap-1 ${isIdeasView ? "max-w-[920px]" : "max-w-6xl"}`}>
+    <div className={`mx-auto mb-4 flex min-h-8 w-full flex-wrap items-end justify-between gap-x-6 gap-y-2 max-sm:mb-3 max-sm:flex-col-reverse max-sm:flex-nowrap max-sm:items-stretch max-sm:gap-1 ${isIdeasView ? "max-w-[920px]" : "max-w-6xl"}`}>
       {!isDeletedView ? (
-        <PipelineSteps
-          stages={STAGE_GROUPS.flatMap((group, index) => {
-            const stage = {
-              label: group.label,
-              // Error is part of Merge, so the stage total counts it once.
-              count: group.statuses.reduce((sum, value) => sum + (value === ERROR_STATUS || value === POSSIBLY_DELIVERED ? 0 : statusCount(value)), 0),
-              href: statusLink(group.statuses[0]),
-              selected: index === stageIndex,
-            };
-            // Your Work only while something is assigned to you, Live only once something went live.
-            const conditional = index === YOUR_WORK_STAGE || index === LIVE_STAGE;
-            return !conditional || stage.count > 0 || stage.selected ? [stage] : [];
-          })}
-        />
+        // As wide as its tabs: the actions share the row while they fit, else wrap below.
+        <div className="min-w-0">
+          <PipelineSteps stages={pipelineStages} />
+        </div>
       ) : null}
-      <div className="absolute right-0 top-0 flex items-center gap-2 max-sm:static max-sm:self-end">
-        {/* At the far right: the site and code addresses, then Project notes and the settings page. */}
+      {/* ml-auto keeps the actions at the right edge, on the tabs' row or wrapped below them. */}
+      <div className="ml-auto flex shrink-0 items-center gap-2 max-sm:self-end">
+        {/* The site and code addresses, then Feature plans, Goals, Project notes and the settings page. The site
+            icon always shows: Getting started can be hidden or give way to another notice, and it must not be the
+            only way to add the site. */}
         {projectLinks && !isDeletedView ? (
           <ProjectLinks
             slug={slug}
@@ -1530,12 +1582,14 @@ export async function IssuesList({
             repoUrl={projectLinks.repoUrl}
             canEdit={canEditProjectLinks}
             // #agent-work-gate: a blocked agent comes first; the site URL ask waits (the icon still opens it).
-            askOnLoad={isIdeasView && unconfiguredAgents.length === 0}
+            // #getting-started asks for the site in its own list, so the panel doesn't open by itself beside it.
+            askOnLoad={isIdeasView && unconfiguredAgents.length === 0 && !gettingStartedShown}
           />
         ) : null}
-        {/* Goals, project notes and settings, as icons, beside the tabs. */}
         {!isDeletedView ? (
           <ProjectIconLinks
+            // Feature plans sits with the other project pages, on the Ideas tab where plans start from ideas.
+            featuresHref={isIdeasView && canContribute ? projectPath(ref, "/features") : undefined}
             goalsHref={canContribute ? projectPath(ref, "/goals") : undefined}
             notesHref={canContribute ? projectPath(ref, "/notes") : undefined}
             settingsHref={isOrgAdmin ? `/projects/${encodeURIComponent(slug)}/settings` : undefined}

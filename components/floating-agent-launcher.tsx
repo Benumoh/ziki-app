@@ -429,6 +429,8 @@ export function FloatingAgentLauncher({
         aria-expanded={open}
         aria-controls="agent-launcher-menu"
         aria-label={open ? "Close agent launcher" : "Open agent launcher"}
+        // On hover, say what it holds (#getting-started): a robot alone doesn't say "help".
+        title={open ? undefined : "Need help? Support, games and agents"}
         className={`inline-flex h-12 w-12 touch-none select-none items-center justify-center rounded-full bg-zk-accent text-white shadow-lg transition hover:bg-electric-blue-strong focus-visible:outline-2 focus-visible:outline-electric-blue focus-visible:outline-offset-2 active:cursor-grabbing ${buttonClassName ?? ""}`}
       >
         {icon ?? <BotIcon />}

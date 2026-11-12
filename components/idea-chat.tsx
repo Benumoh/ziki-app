@@ -30,13 +30,16 @@ export function IdeaChat({
   alwaysOpen = false,
   placeholder,
   types,
+  examples,
 }: {
   projectId: string;
   className?: string;
-  /** Just the box, open from the start and never closed (the Ideas empty state). */
+  /** Just the box, open from the start and never closed (the Ideas empty state). Its buttons then carry words, not just icons. */
   alwaysOpen?: boolean;
   placeholder?: string;
   types?: Array<{ id: string; name: string }>;
+  /** Starters under the box (#getting-started): a click puts the text in the box to edit and send. */
+  examples?: Array<{ label: string; text: string }>;
 }) {
   const [open, setOpen] = useState(alwaysOpen);
   const [modalOpen, setModalOpen] = useState(false);
@@ -177,7 +180,8 @@ export function IdeaChat({
                   send();
                 }
               }}
-              className="block max-h-[220px] min-h-[28px] w-full resize-none border-0 bg-transparent p-1 text-[15px] leading-6 text-zk-text placeholder:text-zk-muted focus:outline-none"
+              // The welcome's box opens two lines tall, so it reads as a place to write, not a search field.
+              className={`block max-h-[220px] w-full resize-none ${alwaysOpen ? "min-h-[56px]" : "min-h-[28px]"} border-0 bg-transparent p-1 text-[15px] leading-6 text-zk-text placeholder:text-zk-muted focus:outline-none`}
             />
             {uploads.length ? (
               <ul className="m-0 mt-1 flex list-none flex-wrap gap-1.5 p-0">
@@ -197,12 +201,24 @@ export function IdeaChat({
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                aria-label="Attach files"
+                aria-label={alwaysOpen ? undefined : "Attach files"}
                 title="Attach files"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-zk-text2 hover:bg-zk-chip hover:text-zk-text"
+                className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-full text-zk-text2 hover:bg-zk-chip hover:text-zk-text ${alwaysOpen ? "px-3 text-[13px] font-medium" : "w-9"}`}
               >
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                {alwaysOpen ? (
+                  // A paperclip with words: "+" alone didn't say what it adds.
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M21 12.5 12.5 21a5.5 5.5 0 0 1-7.8-7.8l9-9a3.7 3.7 0 0 1 5.2 5.2l-9 9a1.8 1.8 0 0 1-2.6-2.6L15.5 7.5" /></svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                )}
+                {alwaysOpen ? "Attach files" : null}
               </button>
+              {/* Enter sends: say so, or a new person presses it for a new line and is surprised. */}
+              {alwaysOpen && text.trim() ? (
+                <span className="ml-auto mr-3 text-xs text-zk-muted max-sm:hidden">
+                  <kbd className="font-sans font-semibold text-zk-text2">Enter</kbd> to send · <kbd className="font-sans font-semibold text-zk-text2">Shift + Enter</kbd> for a new line
+                </span>
+              ) : null}
               <input ref={fileRef} type="file" multiple hidden onChange={(event) => { void attach(event.target.files); event.target.value = ""; }} />
               <button
                 type="button"
@@ -210,8 +226,9 @@ export function IdeaChat({
                 disabled={pending || uploading || !text.trim()}
                 aria-label="Send idea"
                 title="Send"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-zk-text text-zk-surface transition disabled:opacity-30"
+                className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-zk-text text-zk-surface transition disabled:opacity-30 ${alwaysOpen ? "px-4 text-[13px] font-bold" : "w-9"}`}
               >
+                {alwaysOpen && !pending ? "Send idea" : null}
                 {pending ? (
                   <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 ) : (
@@ -220,6 +237,34 @@ export function IdeaChat({
               </button>
             </div>
           </div>
+          {examples?.length ? (
+            // Centred under the box, like the heading above and the steps below it. The prompt has its own line,
+            // so the starters themselves sit centred rather than shifted right by a label beside them.
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <span className="text-[13px] text-zk-muted">Need a starting point? Pick one:</span>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+              {examples.map((example) => (
+                <button
+                  key={example.label}
+                  type="button"
+                  disabled={pending}
+                  onClick={() => {
+                    setText(example.text);
+                    setError(null);
+                    requestAnimationFrame(() => {
+                      const box = boxRef.current;
+                      box?.focus();
+                      box?.setSelectionRange(example.text.length, example.text.length);
+                    });
+                  }}
+                  className="rounded-full border border-zk-border bg-zk-surface px-3 py-1.5 text-[13px] font-medium text-zk-text2 transition-colors hover:border-electric-blue-strong/40 hover:bg-zk-tint hover:text-zk-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-electric-blue disabled:opacity-50"
+                >
+                  {example.label}
+                </button>
+              ))}
+              </div>
+            </div>
+          ) : null}
         </div>
   );
   if (!open) return button;
