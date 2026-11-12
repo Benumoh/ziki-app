@@ -8,12 +8,20 @@ import { isSuperAdminEmail } from "@/lib/super-admin";
 import {
   feedbackPromptVisible,
   isOnboardingGoal,
-  needsWelcome,
+  welcomeDue,
   type OnboardingGoalValue,
   type OnboardingState,
 } from "@/lib/onboarding-flow";
 
 /** #onboarding: reading and writing a person's welcome-flow state. */
+
+/**
+ * Testing mode: ONBOARDING_ALWAYS_SHOW=true shows the welcome flow to everyone
+ * once per browser session, finished or not. Off unless set.
+ */
+export function onboardingAlwaysShown(): boolean {
+  return process.env.ONBOARDING_ALWAYS_SHOW?.trim().toLowerCase() === "true";
+}
 
 export const ONBOARDING_SELECT = {
   step: true,
@@ -42,11 +50,15 @@ export async function loadOnboarding(userId: string): Promise<OnboardingRow | nu
  * so that membership doesn't make a brand-new super admin look like someone
  * who joined a team; any other organisation still does.
  */
-export async function shouldShowWelcome(user: {
-  id: string;
-  role: Parameters<typeof isSuperAdmin>[0];
-  email?: string | null;
-}): Promise<boolean> {
+export async function shouldShowWelcome(
+  user: {
+    id: string;
+    role: Parameters<typeof isSuperAdmin>[0];
+    email?: string | null;
+  },
+  { seenThisSession = false }: { seenThisSession?: boolean } = {},
+): Promise<boolean> {
+  if (onboardingAlwaysShown()) return welcomeDue(null, false, { alwaysShow: true, seenThisSession });
   const superAdmin = isSuperAdmin(user.role) || isSuperAdminEmail(user.email);
   const [row, membership] = await Promise.all([
     loadOnboarding(user.id),
@@ -55,7 +67,7 @@ export async function shouldShowWelcome(user: {
       select: { organisationId: true },
     }),
   ]);
-  return needsWelcome(row, Boolean(membership));
+  return welcomeDue(row, Boolean(membership), { alwaysShow: false, seenThisSession });
 }
 
 /**

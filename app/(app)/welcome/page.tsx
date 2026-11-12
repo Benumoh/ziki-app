@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth-helpers";
-import { loadOnboarding, startOnboarding } from "@/lib/onboarding-state";
+import { loadOnboarding, onboardingAlwaysShown, startOnboarding } from "@/lib/onboarding-state";
 import { onboardingFinished, resumeStep } from "@/lib/onboarding-flow";
 import { NOINDEX } from "@/lib/seo/site";
 import { WelcomeFlow } from "./welcome-flow";
@@ -16,13 +16,17 @@ export default async function WelcomePage() {
   const user = await requireUser();
   const isNew = !(await loadOnboarding(user.id));
   const state = await startOnboarding(user.id);
-  if (onboardingFinished(state)) redirect("/home");
+  const finished = onboardingFinished(state);
+  // Testing mode (ONBOARDING_ALWAYS_SHOW) replays the flow from the start for
+  // people who already finished it, instead of sending them on.
+  const replay = finished && onboardingAlwaysShown();
+  if (finished && !replay) redirect("/home");
 
   const firstName = (user.name ?? "").trim().split(/\s+/)[0] || null;
   return (
     <WelcomeFlow
       firstName={firstName}
-      initialStep={resumeStep(state)}
+      initialStep={replay ? 0 : resumeStep(state)}
       initialGoal={state.goal}
       isNew={isNew}
     />

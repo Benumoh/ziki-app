@@ -108,6 +108,27 @@ export function needsWelcome(state: OnboardingState | null, hasOrganisation: boo
   return !onboardingFinished(state);
 }
 
+/**
+ * Set for the browser session once someone finishes or skips the welcome flow.
+ * Only read in always-show testing mode, so leaving the flow doesn't send
+ * them straight back to it from /home.
+ */
+export const WELCOME_SEEN_COOKIE = "ziki-welcome-seen";
+
+/**
+ * Whether /home sends someone to the welcome flow. Normally only newcomers who
+ * haven't finished it (needsWelcome). In always-show testing mode
+ * (ONBOARDING_ALWAYS_SHOW=true) everyone sees it once per browser session.
+ */
+export function welcomeDue(
+  state: OnboardingState | null,
+  hasOrganisation: boolean,
+  mode: { alwaysShow: boolean; seenThisSession: boolean },
+): boolean {
+  if (mode.alwaysShow) return !mode.seenThisSession;
+  return needsWelcome(state, hasOrganisation);
+}
+
 /** Whether the first-experience feedback prompt shows right now. */
 export function feedbackPromptVisible(
   state: OnboardingState | null,

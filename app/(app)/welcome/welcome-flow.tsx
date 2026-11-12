@@ -12,10 +12,25 @@ import {
   GOAL_OPTIONS,
   LAST_ONBOARDING_STEP,
   goalOption,
+  WELCOME_SEEN_COOKIE,
   type OnboardingGoalValue,
 } from "@/lib/onboarding-flow";
 
 const STEP_LABELS = ["About Ziki", "Your goal", "First step"] as const;
+
+/**
+ * Marks the flow as left for this browser session (no expiry), so always-show
+ * testing mode doesn't send /home straight back here. Not secret, so it's set
+ * here before the action runs rather than by the action's response.
+ */
+function markSeenThisSession() {
+  try {
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${WELCOME_SEEN_COOKIE}=1; Path=/; SameSite=Lax${secure}`;
+  } catch {
+    // Cookies blocked: in testing mode /home shows the flow again; nothing else changes.
+  }
+}
 
 const primaryButton =
   "inline-flex min-h-11 items-center justify-center rounded-full bg-electric-blue-strong px-5 text-sm font-bold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-blue focus-visible:ring-offset-2 focus-visible:ring-offset-zk-bg disabled:cursor-not-allowed disabled:opacity-60";
@@ -107,6 +122,7 @@ export function WelcomeFlow({
     startTransition(async () => {
       try {
         trackFunnelEvent("onboarding_skipped", { step: step + 1 });
+        markSeenThisSession();
         const result = await skipOnboardingAction();
         if (result && !result.ok) setError(result.error);
       } catch (caught) {
@@ -122,6 +138,7 @@ export function WelcomeFlow({
     startTransition(async () => {
       try {
         trackFunnelEvent("onboarding_completed", { goal });
+        markSeenThisSession();
         trackFunnelEvent("first_action", { goal });
         const result = await completeOnboardingAction({ goal });
         if (result && !result.ok) setError(result.error);

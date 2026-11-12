@@ -3,7 +3,8 @@ import { requireUser } from "@/lib/auth-helpers";
 import { currentOrgPathFor, firstProjectRefFor } from "@/lib/project-route";
 import { ideasPath } from "@/lib/project-paths";
 import { logger } from "@/lib/logger";
-import { WELCOME_PATH } from "@/lib/onboarding-flow";
+import { cookies } from "next/headers";
+import { WELCOME_PATH, WELCOME_SEEN_COOKIE } from "@/lib/onboarding-flow";
 import { shouldShowWelcome } from "@/lib/onboarding-state";
 
 /**
@@ -18,7 +19,8 @@ export default async function HomePage() {
   const user = await requireUser();
   let welcome = false;
   try {
-    welcome = await shouldShowWelcome(user);
+    const seenThisSession = (await cookies()).get(WELCOME_SEEN_COOKIE)?.value === "1";
+    welcome = await shouldShowWelcome(user, { seenThisSession });
   } catch (error) {
     // The welcome flow is a nicety: never block someone's way into the app.
     logger.error("[home] onboarding check failed", error);

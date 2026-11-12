@@ -25,7 +25,8 @@ const db = vi.hoisted(() => ({
 
 vi.mock("@/lib/auth-helpers", () => ({ requireUser }));
 vi.mock("next/navigation", () => ({ redirect }));
-vi.mock("next/headers", () => ({ cookies: vi.fn() }));
+const cookieSet = vi.hoisted(() => vi.fn());
+vi.mock("next/headers", () => ({ cookies: vi.fn(async () => ({ set: cookieSet, get: vi.fn() })) }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 vi.mock("@/lib/onboarding-state", () => ({ startOnboarding, recordOnboardingEvent }));
@@ -131,6 +132,23 @@ describe("who is new at /home", () => {
     db.userOnboarding.findUnique.mockResolvedValue(null);
     db.membership.findFirst.mockResolvedValue({ organisationId: "org-2" });
     await expect(shouldShowWelcome({ id: "admin-1", role: "super_admin" })).resolves.toBe(false);
+  });
+
+  it("in always-show testing mode, shows everyone the flow once per browser session", async () => {
+    const shouldShowWelcome = await realShouldShowWelcome();
+    vi.stubEnv("ONBOARDING_ALWAYS_SHOW", "true");
+    try {
+      // A finished, long-standing member still gets it on a new visit…
+      db.userOnboarding.findUnique.mockResolvedValue({ ...finished, step: 2, goal: "explore_projects" });
+      db.membership.findFirst.mockResolvedValue({ organisationId: "org-1" });
+      await expect(shouldShowWelcome({ id: "member-1", role: "user" })).resolves.toBe(true);
+      // …but not again after leaving it this session, so /home doesn't loop.
+      await expect(shouldShowWelcome({ id: "member-1", role: "user" }, { seenThisSession: true })).resolves.toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+    // Off again: the normal rule applies.
+    await expect(shouldShowWelcome({ id: "member-1", role: "user" })).resolves.toBe(false);
   });
 
   it("counts every membership, the main organisation included, for everyone else", async () => {

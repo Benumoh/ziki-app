@@ -64,6 +64,7 @@ Optional:
 | Variable | When |
 | --- | --- |
 | `GOOGLE_ALLOWED_EMAILS` / `GOOGLE_ALLOWED_DOMAINS` | To limit who can sign up. Unset, any Google account can |
+| `ONBOARDING_ALWAYS_SHOW` | `true` while testing: everyone sees the welcome flow once per browser session. Remove it (and redeploy) for normal behaviour |
 | `NEXT_PUBLIC_GTM_ID` | Your own Google Tag Manager container. Unset, no analytics and no cookie banner |
 | `SMTP_*` | To send notification emails |
 | `ANTHROPIC_API_KEY` | For AI features such as structuring ideas |
