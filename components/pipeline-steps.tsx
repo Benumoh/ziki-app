@@ -4,7 +4,8 @@ import Link from "next/link";
 /**
  * The stages of the work across the top of the Issues page, on one row: Your
  * Work (only while you have any), Ideas, In Progress, Delivered and Live (only
- * once something went live), each with its count. The picked stage is filled in;
+ * once something went live), each with its count. They are tabs: the picked
+ * stage is underlined (a bar under every stage read as a progress bar);
  * its statuses are listed down the left of the panel.
  *
  * On a phone they are plain tabs: equal columns, a long label on two lines with
@@ -33,17 +34,22 @@ export function PipelineSteps({ stages, label = "Stages" }: { stages: PipelineSt
             }`}
           >
             {stage.label}
-            {/* The same face as the label on a phone, so the two lines read as one tab. */}
-            <span className={`font-mono text-[11px] font-medium tabular-nums text-zk-muted max-sm:mt-0.5 max-sm:font-sans max-sm:text-[12px] ${stage.selected ? "max-sm:font-semibold max-sm:text-zk-accent" : ""}`}>{stage.count}</span>
+            {/* A readable count in a small pill; the same face as the label on a phone, so the two lines read as one tab. */}
+            <span
+              className={`rounded-full px-1.5 text-[11.5px] font-semibold tabular-nums sm:min-w-5 sm:text-center ${
+                stage.selected ? "bg-zk-tint text-zk-accent" : "bg-zk-chip text-zk-text2"
+              } max-sm:mt-0.5 max-sm:bg-transparent max-sm:px-0 max-sm:font-sans max-sm:text-[12px] ${stage.selected ? "max-sm:font-semibold max-sm:text-zk-accent" : "max-sm:font-medium max-sm:text-zk-muted"}`}
+            >
+              {stage.count}
+            </span>
           </span>
-          {/* The dot is for the wide layout; a phone shows tabs. */}
-          <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full max-sm:hidden ${stage.selected ? "bg-electric-blue-strong" : "bg-electric-blue-strong/15"}`} />
+          {/* A tab's underline (#getting-started): only the picked stage has one, so the row reads as tabs, not a progress bar. */}
           <span
             aria-hidden="true"
-            className={`h-2 w-full rounded-full max-sm:-mb-px max-sm:rounded-none ${
+            className={`h-[3px] w-full rounded-full max-sm:-mb-px max-sm:rounded-none ${
               stage.selected
-                ? "bg-electric-blue-strong max-sm:h-[3px]"
-                : "bg-electric-blue-strong/15 group-hover:bg-electric-blue-strong/30 max-sm:h-0 max-sm:bg-transparent"
+                ? "bg-electric-blue-strong"
+                : "bg-transparent group-hover:bg-electric-blue-strong/25 max-sm:h-0"
             }`}
           />
         </Link>

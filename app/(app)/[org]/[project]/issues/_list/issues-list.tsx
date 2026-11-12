@@ -7,6 +7,7 @@ import { LocalTime } from "@/components/local-time";
 import { POSSIBLY_DELIVERED_STATUS, POSSIBLY_DELIVERED_WHERE, deliverySignals, type DeliverySignals } from "@/lib/possibly-delivered";
 import Link from "next/link";
 import { EarnPanel } from "@/components/earn-panel";
+import { GettingStarted } from "@/components/getting-started";
 import { earnBannerLine, newestOpenProjectFor, type EarnBannerProject } from "@/lib/earn-banner";
 import { newIssueHref } from "@/lib/reported-from";
 import "./issues.css";
@@ -1149,6 +1150,22 @@ export async function IssuesList({
   // Earnings (#earnings): the notice names the newest project open in Discover that this person isn't in yet, and
   // comes back for each new one; with nothing new to join it isn't shown.
   let earnProject: EarnBannerProject | null = null;
+  // Getting started (#getting-started): on New ideas (no search), for members, one numbered setup list in place of the
+  // site URL panel opening by itself and the next-step card. It hides itself once everything is done or skipped.
+  const showGettingStarted = Boolean(ideasView === "new" && !qParam && !isDeletedView && projectLinks && membershipRole && organisationId && userId);
+  const gettingStarted = showGettingStarted && organisationId && userId
+    ? await loadOrEmpty(
+        "getting started",
+        async () => {
+          const [anyIdeas, agentCount] = await Promise.all([
+            prisma.idea.count({ where: { projectId: project.id, isDeleted: false }, take: 1 }),
+            prisma.agent.count({ where: { ...activeIn(organisationId), ownerUserId: userId, revokedAt: null } }),
+          ]);
+          return { hasIdeas: anyIdeas > 0, agentCount };
+        },
+        null,
+      )
+    : null;
   if (isIdeasView && userId) {
     try {
       earnProject = await newestOpenProjectFor(prisma, userId);
@@ -1168,7 +1185,19 @@ export async function IssuesList({
         {isIdeasView && !isDeletedView && earnProject ? <EarnPanel project={earnProject} line={earnBannerLine(earnProject)} /> : null}
 
         <AgentSetupNotice agents={unconfiguredAgents} />
-        {nextStep && organisationId ? <OrganisationNextStepCard step={nextStep} organisationId={organisationId} /> : null}
+        {gettingStarted && projectLinks && unconfiguredAgents.length === 0 ? (
+          <GettingStarted
+            slug={slug}
+            siteUrl={projectLinks.siteUrl}
+            repoUrl={projectLinks.repoUrl}
+            canEditLinks={canEditProjectLinks}
+            hasIdeas={gettingStarted.hasIdeas}
+            agentCount={gettingStarted.agentCount}
+            agentHref="/settings/connect"
+          />
+        ) : nextStep && organisationId ? (
+          <OrganisationNextStepCard step={nextStep} organisationId={organisationId} />
+        ) : null}
 
         {milestoneSummary ? (
           <section aria-label={`Milestone ${milestoneSummary.title}`} className="rounded-[20px] border border-zk-border bg-zk-surface p-5">
@@ -1530,7 +1559,8 @@ export async function IssuesList({
             repoUrl={projectLinks.repoUrl}
             canEdit={canEditProjectLinks}
             // #agent-work-gate: a blocked agent comes first; the site URL ask waits (the icon still opens it).
-            askOnLoad={isIdeasView && unconfiguredAgents.length === 0}
+            // #getting-started asks for the site in its own list, so the panel doesn't open by itself beside it.
+            askOnLoad={isIdeasView && unconfiguredAgents.length === 0 && !gettingStarted}
           />
         ) : null}
         {/* Goals, project notes and settings, as icons, beside the tabs. */}

@@ -84,11 +84,14 @@ function TopNavLink({
   href,
   active,
   label,
+  hint,
   children,
 }: {
   href: string;
   active: boolean;
   label: string;
+  /** What the area is for, shown on hover (#getting-started): the names alone don't say it to someone new. */
+  hint?: string;
   children: React.ReactNode;
 }) {
   // Below lg this is a tab in the bottom strip: icon over a short label.
@@ -105,7 +108,7 @@ function TopNavLink({
   );
   if (href.startsWith("http")) {
     return (
-      <a href={href} className={className}>
+      <a href={href} title={hint} className={className}>
         {inner}
       </a>
     );
@@ -114,6 +117,7 @@ function TopNavLink({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
+      title={hint}
       className={className}
     >
       {inner}
@@ -139,31 +143,31 @@ function TopNav({ pathname, projectSlug }: { pathname: string | null; projectSlu
       // clear of the home indicator. From lg it sits inline in the top bar.
       className="flex items-center max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-40 max-lg:justify-around max-lg:border-t max-lg:border-zk-border max-lg:bg-zk-surface max-lg:px-2 max-lg:pt-1.5 max-lg:pb-[max(0.375rem,env(safe-area-inset-bottom))] max-lg:shadow-[0_-1px_3px_rgba(0,0,0,0.04)] lg:ml-6 lg:gap-1"
     >
-      <TopNavLink href={productHref} active={Boolean(projectSlug && pathname?.startsWith(`/${projectSlug}`) && !inMarketing)} label="Your App">
+      <TopNavLink href={productHref} active={Boolean(projectSlug && pathname?.startsWith(`/${projectSlug}`) && !inMarketing)} label="Your App" hint="Your project: post ideas and follow them until they ship">
         <NavIcon>
           <circle cx="12" cy="12" r="9" />
           <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
         </NavIcon>
       </TopNavLink>
-      <TopNavLink href={marketingHref} active={inMarketing} label="Marketing">
+      <TopNavLink href={marketingHref} active={inMarketing} label="Marketing" hint="Help more people find and use your product">
         <NavIcon>
           <path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z" />
           <path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" />
         </NavIcon>
       </TopNavLink>
-      <TopNavLink href="/security" active={isNavItemActive(pathname, "/security")} label="Security">
+      <TopNavLink href="/security" active={isNavItemActive(pathname, "/security")} label="Security" hint="Check your product for security problems and what to fix">
         <NavIcon>
           <path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z" />
           <path d="m9 12 2 2 4-4" />
         </NavIcon>
       </TopNavLink>
-      <TopNavLink href="/discover" active={isNavItemActive(pathname, "/discover")} label="Discover">
+      <TopNavLink href="/discover" active={isNavItemActive(pathname, "/discover")} label="Discover" hint="Browse other projects on Ziki you can join and work on">
         <NavIcon>
           <circle cx="12" cy="12" r="9" />
           <path d="m15.5 8.5-2 5-5 2 2-5 5-2Z" />
         </NavIcon>
       </TopNavLink>
-      <TopNavLink href="/forum" active={isNavItemActive(pathname, "/forum")} label="Forum">
+      <TopNavLink href="/forum" active={isNavItemActive(pathname, "/forum")} label="Forum" hint="Ask questions and talk with other people using Ziki">
         <NavIcon>
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </NavIcon>
