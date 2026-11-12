@@ -56,24 +56,38 @@ const ICON_BUTTON =
   "relative inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zk-border bg-zk-surface text-zk-text2 hover:bg-zk-chip hover:text-zk-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-electric-blue";
 
 /**
- * Goals and Notes carry their names from lg up (#getting-started): a target and a notebook alone left new people
- * guessing. The gear needs no name. Below lg the row is too narrow beside the centred stages, so they are icons there.
+ * Feature plans, Goals and Notes carry their names from lg up (#getting-started): icons alone left new people
+ * guessing. The gear needs no name. Below lg the row is too narrow beside the stages, so they are icons there.
  */
 const LABELLED_BUTTON =
   "relative inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-zk-border bg-zk-surface px-2 text-[12.5px] font-medium text-zk-text2 hover:bg-zk-chip hover:text-zk-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-electric-blue max-lg:w-8 max-lg:px-0";
 
-/** Beside the stage tabs, at the top right: Goals and Project notes (icon and name), and the project's settings (a gear). */
+/** Beside the stage tabs, at the right: Feature plans, Goals and Project notes (icon and name), and the project's settings (a gear). */
 export function ProjectIconLinks({
+  featuresHref,
   goalsHref,
   notesHref,
   settingsHref,
 }: {
+  /** Feature plans: on the Ideas tab only. */
+  featuresHref?: string;
   goalsHref?: string;
   notesHref?: string;
   settingsHref?: string;
 }) {
   return (
     <>
+      {featuresHref ? (
+        <Link href={featuresHref} aria-label="Feature plans" title="Feature plans: turn a feature request into planned work" className={LABELLED_BUTTON}>
+          {/* A checklist: a feature broken into planned steps. */}
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10 6h10M10 12h10M10 18h10" />
+            <path d="m3.5 6 1.5 1.5L7.5 5M3.5 12l1.5 1.5L7.5 11" />
+            <circle cx="5.5" cy="18" r="1.2" />
+          </svg>
+          <span aria-hidden="true" className="max-lg:hidden">Feature plans</span>
+        </Link>
+      ) : null}
       {goalsHref ? (
         <Link href={goalsHref} aria-label="Goals and budgets" title="Goals and budgets" className={LABELLED_BUTTON}>
           {/* A target: the pool aimed at the work it funds. */}

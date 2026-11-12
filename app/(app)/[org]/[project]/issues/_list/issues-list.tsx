@@ -12,7 +12,7 @@ import { earnBannerLine, newestOpenProjectFor, type EarnBannerProject } from "@/
 import { newIssueHref } from "@/lib/reported-from";
 import "./issues.css";
 import { Avatar } from "@/components/avatar";
-import { Suspense } from "react";
+import { Suspense, type CSSProperties } from "react";
 import { RememberIssueList } from "@/components/back-to-list";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -1532,35 +1532,42 @@ export async function IssuesList({
       </div>
   );
 
+  // The stage tabs across the top.
+  const pipelineStages = STAGE_GROUPS.flatMap((group, index) => {
+    const stage = {
+      label: group.label,
+      // Error is part of Merge, so the stage total counts it once.
+      count: group.statuses.reduce((sum, value) => sum + (value === ERROR_STATUS || value === POSSIBLY_DELIVERED ? 0 : statusCount(value)), 0),
+      href: statusLink(group.statuses[0]),
+      selected: index === stageIndex,
+    };
+    // Your Work only while something is assigned to you, Live only once something went live.
+    const conditional = index === YOUR_WORK_STAGE || index === LIVE_STAGE;
+    return !conditional || stage.count > 0 || stage.selected ? [stage] : [];
+  });
+
   return (
     <>
     {/* An issue's back arrow returns here, to this tab, filters and page. */}
     <Suspense fallback={null}>
       <RememberIssueList />
     </Suspense>
-    {/* The stages, centred, with Project notes at the right of the same row. The row is as wide
-        as the panel below, so the project icons line up with the panel's right edge. */}
+    {/* One bar as wide as the panel below (#getting-started): the stage tabs at its left edge, the project's
+        actions (site, Feature plans, Goals, Notes, settings) together at its right edge, so both line up with
+        the panel. When the stages are many the actions wrap under them, still at the right. */}
     {/* On a phone the icons take their own row above the stages, so they never cover them. */}
-    <div className={`relative mx-auto mb-4 flex min-h-8 w-full items-start justify-center max-sm:mb-3 max-sm:flex-col-reverse max-sm:items-stretch max-sm:gap-1 ${isIdeasView ? "max-w-[920px]" : "max-w-6xl"}`}>
+    <div className={`mx-auto mb-4 flex min-h-8 w-full flex-wrap items-end justify-between gap-x-6 gap-y-2 max-sm:mb-3 max-sm:flex-col-reverse max-sm:flex-nowrap max-sm:items-stretch max-sm:gap-1 ${isIdeasView ? "max-w-[920px]" : "max-w-6xl"}`}>
       {!isDeletedView ? (
-        <PipelineSteps
-          stages={STAGE_GROUPS.flatMap((group, index) => {
-            const stage = {
-              label: group.label,
-              // Error is part of Merge, so the stage total counts it once.
-              count: group.statuses.reduce((sum, value) => sum + (value === ERROR_STATUS || value === POSSIBLY_DELIVERED ? 0 : statusCount(value)), 0),
-              href: statusLink(group.statuses[0]),
-              selected: index === stageIndex,
-            };
-            // Your Work only while something is assigned to you, Live only once something went live.
-            const conditional = index === YOUR_WORK_STAGE || index === LIVE_STAGE;
-            return !conditional || stage.count > 0 || stage.selected ? [stage] : [];
-          })}
-        />
+        // At least as wide as its tabs need (about 120px each), so the actions wrap below rather than squeeze them.
+        // (A width only from sm: on a phone the row is a column, where a basis would be a height.)
+        <div className="min-w-0 grow sm:basis-[var(--tabs-basis)]" style={{ "--tabs-basis": `${pipelineStages.length * 120}px` } as CSSProperties}>
+          <PipelineSteps stages={pipelineStages} />
+        </div>
       ) : null}
-      <div className="absolute right-0 top-0 flex items-center gap-2 max-sm:static max-sm:self-end">
-        {/* At the far right: the site and code addresses, then Project notes and the settings page. */}
-        {projectLinks && !isDeletedView ? (
+      <div className="flex shrink-0 items-center gap-2 max-sm:self-end">
+        {/* The site and code addresses, then Feature plans, Goals, Project notes and the settings page.
+            While Getting started asks for the site, its icon (and its "missing" dot) waits: one ask at a time. */}
+        {projectLinks && !isDeletedView && !(gettingStarted && !projectLinks.siteUrl) ? (
           <ProjectLinks
             slug={slug}
             siteUrl={projectLinks.siteUrl}
@@ -1571,9 +1578,10 @@ export async function IssuesList({
             askOnLoad={isIdeasView && unconfiguredAgents.length === 0 && !gettingStarted}
           />
         ) : null}
-        {/* Goals, project notes and settings, as icons, beside the tabs. */}
         {!isDeletedView ? (
           <ProjectIconLinks
+            // Feature plans sits with the other project pages, on the Ideas tab where plans start from ideas.
+            featuresHref={isIdeasView && canContribute ? projectPath(ref, "/features") : undefined}
             goalsHref={canContribute ? projectPath(ref, "/goals") : undefined}
             notesHref={canContribute ? projectPath(ref, "/notes") : undefined}
             settingsHref={isOrgAdmin ? `/projects/${encodeURIComponent(slug)}/settings` : undefined}

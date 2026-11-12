@@ -1,8 +1,6 @@
 import { IssuesList } from "../issues/_list/issues-list";
 import { queryOf } from "../issues/_list/route-page";
-import Link from "next/link";
 import { requireProject } from "@/lib/project-route";
-import { projectPath } from "@/lib/project-paths";
 
 type Props = {
   params: Promise<{ org: string; project: string }>;
@@ -13,9 +11,7 @@ type Props = {
 export default async function IdeasPage({ params, searchParams }: Props) {
   const { org, project } = await params;
   const query = await searchParams;
-  const context = await requireProject(org, project);
-  return <>
-    {context.canContribute ? <div className="mx-auto mb-3 flex max-w-6xl justify-end"><Link href={projectPath(context.project.ref, "/features")} className="rounded-lg border border-zk-border px-3 py-2 text-sm font-semibold text-zk-text hover:bg-zk-chip">Feature plans</Link></div> : null}
-    <IssuesList org={org} slug={project} status="ideas" returnTo={`/${org}/${project}/ideas${queryOf(query)}`} searchParams={Promise.resolve(query)} />
-  </>;
+  // Feature plans is in the project actions beside the stage tabs (ProjectIconLinks), not a row of its own.
+  await requireProject(org, project);
+  return <IssuesList org={org} slug={project} status="ideas" returnTo={`/${org}/${project}/ideas${queryOf(query)}`} searchParams={Promise.resolve(query)} />;
 }

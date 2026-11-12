@@ -56,8 +56,10 @@ export function ProjectBreadcrumb({ project }: { project: BreadcrumbProject }) {
   const ref = project.slug ? projectRef(project.orgSlug, project.slug) : null;
   const onProjects = !ref;
   const section = ref ? sectionOf(pathname, ref) : [];
+  // The Ideas list is narrower (920px, issues-list): the breadcrumb takes its width so their left edges line up.
+  const ideasList = section[0] === "Ideas" && !section[1]?.startsWith("Idea #");
   return (
-    <nav aria-label="Breadcrumb" className="mx-auto mb-3 flex w-full max-w-6xl items-center px-0.5 text-[13px] text-zk-text2 max-sm:mb-1">
+    <nav aria-label="Breadcrumb" className={`mx-auto mb-3 flex w-full ${ideasList ? "max-w-[920px]" : "max-w-6xl"} items-center px-0.5 text-[13px] text-zk-text2 max-sm:mb-1`}>
       <ol className="flex min-w-0 flex-wrap items-center gap-0.5">
         {/* Every project of the organisation, with its health. */}
         <li className="min-w-0">
