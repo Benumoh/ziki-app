@@ -60,7 +60,9 @@ export function ProjectBreadcrumb({ project }: { project: BreadcrumbProject }) {
   const ideasList = section[0] === "Ideas" && !section[1]?.startsWith("Idea #");
   return (
     <nav aria-label="Breadcrumb" className={`mx-auto mb-3 flex w-full ${ideasList ? "max-w-[920px]" : "max-w-6xl"} items-center px-0.5 text-[13px] text-zk-text2 max-sm:mb-1`}>
-      <ol className="flex min-w-0 flex-wrap items-center gap-0.5">
+      {/* From sm, -ml-2 cancels the nav's and the first crumb's padding, so the words start on the content's left
+          edge. A phone's panels sit further in, where the padding already lines them up. */}
+      <ol className="flex sm:-ml-2 min-w-0 flex-wrap items-center gap-0.5">
         {/* Every project of the organisation, with its health. */}
         <li className="min-w-0">
           <Link href={projectsHref} aria-current={onProjects ? "page" : undefined} className={`${crumb} block truncate ${onProjects ? "font-bold text-zk-text" : "font-medium text-zk-text2"}`}>

@@ -238,7 +238,8 @@ export function IdeaChat({
             </div>
           </div>
           {examples?.length ? (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            // Centred under the box, like the heading above and the steps below it.
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
               <span className="text-[13px] text-zk-muted">Try:</span>
               {examples.map((example) => (
                 <button
