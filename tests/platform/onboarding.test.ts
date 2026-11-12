@@ -19,7 +19,7 @@ const db = vi.hoisted(() => ({
   userOnboarding: { updateMany: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
   onboardingEvent: { create: vi.fn(), createMany: vi.fn() },
   onboardingFeedback: { create: vi.fn() },
-  membership: { findUnique: vi.fn() },
+  membership: { findUnique: vi.fn(), findFirst: vi.fn() },
   $transaction: vi.fn(),
 }));
 
@@ -106,6 +106,39 @@ describe("who sees the welcome flow", () => {
     expect(firstActionPath("contribute_issues")).toBe("/earn");
     expect(firstActionPath("work_with_agents")).toBe("/settings/agents");
     expect(firstActionPath(null)).toBe("/home");
+  });
+});
+
+describe("who is new at /home", () => {
+  async function realShouldShowWelcome() {
+    const actual = await vi.importActual<typeof import("@/lib/onboarding-state")>("@/lib/onboarding-state");
+    return actual.shouldShowWelcome;
+  }
+
+  it("still welcomes a brand-new super admin, whose main-organisation ownership is automatic", async () => {
+    const shouldShowWelcome = await realShouldShowWelcome();
+    db.userOnboarding.findUnique.mockResolvedValue(null);
+    db.membership.findFirst.mockResolvedValue(null);
+    await expect(shouldShowWelcome({ id: "admin-1", role: "super_admin", email: "admin@example.com" })).resolves.toBe(true);
+    expect(db.membership.findFirst).toHaveBeenCalledWith({
+      where: { userId: "admin-1", organisation: { slug: { not: "zedu" } } },
+      select: { organisationId: true },
+    });
+  });
+
+  it("doesn't welcome a super admin who also belongs to another organisation", async () => {
+    const shouldShowWelcome = await realShouldShowWelcome();
+    db.userOnboarding.findUnique.mockResolvedValue(null);
+    db.membership.findFirst.mockResolvedValue({ organisationId: "org-2" });
+    await expect(shouldShowWelcome({ id: "admin-1", role: "super_admin" })).resolves.toBe(false);
+  });
+
+  it("counts every membership, the main organisation included, for everyone else", async () => {
+    const shouldShowWelcome = await realShouldShowWelcome();
+    db.userOnboarding.findUnique.mockResolvedValue(null);
+    db.membership.findFirst.mockResolvedValue({ organisationId: "zedu-org" });
+    await expect(shouldShowWelcome({ id: "member-1", role: "user" })).resolves.toBe(false);
+    expect(db.membership.findFirst).toHaveBeenCalledWith({ where: { userId: "member-1" }, select: { organisationId: true } });
   });
 });
 

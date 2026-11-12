@@ -18,7 +18,7 @@ export default async function HomePage() {
   const user = await requireUser();
   let welcome = false;
   try {
-    welcome = await shouldShowWelcome(user.id);
+    welcome = await shouldShowWelcome(user);
   } catch (error) {
     // The welcome flow is a nicety: never block someone's way into the app.
     logger.error("[home] onboarding check failed", error);

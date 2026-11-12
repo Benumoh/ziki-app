@@ -2,6 +2,9 @@ import "server-only";
 import { Prisma, type OnboardingEventName } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { ZEDU_SLUG } from "@/lib/organisation";
+import { isSuperAdmin } from "@/lib/roles";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 import {
   feedbackPromptVisible,
   isOnboardingGoal,
@@ -33,11 +36,24 @@ export async function loadOnboarding(userId: string): Promise<OnboardingRow | nu
   return row ? toRow(row) : null;
 }
 
-/** Whether /home should send this person to /welcome. */
-export async function shouldShowWelcome(userId: string): Promise<boolean> {
+/**
+ * Whether /home sends this person to /welcome. A super admin is made owner of
+ * the main organisation automatically at sign-in (ensureZeduOwnerMembership),
+ * so that membership doesn't make a brand-new super admin look like someone
+ * who joined a team; any other organisation still does.
+ */
+export async function shouldShowWelcome(user: {
+  id: string;
+  role: Parameters<typeof isSuperAdmin>[0];
+  email?: string | null;
+}): Promise<boolean> {
+  const superAdmin = isSuperAdmin(user.role) || isSuperAdminEmail(user.email);
   const [row, membership] = await Promise.all([
-    loadOnboarding(userId),
-    prisma.membership.findFirst({ where: { userId }, select: { organisationId: true } }),
+    loadOnboarding(user.id),
+    prisma.membership.findFirst({
+      where: { userId: user.id, ...(superAdmin ? { organisation: { slug: { not: ZEDU_SLUG } } } : {}) },
+      select: { organisationId: true },
+    }),
   ]);
   return needsWelcome(row, Boolean(membership));
 }
