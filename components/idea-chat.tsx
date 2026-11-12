@@ -232,7 +232,7 @@ export function IdeaChat({
           </div>
           {examples?.length ? (
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="text-[13px] text-zk-muted">Not sure what to write? Try:</span>
+              <span className="text-[13px] text-zk-muted">Try:</span>
               {examples.map((example) => (
                 <button
                   key={example.label}
