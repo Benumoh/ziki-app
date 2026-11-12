@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { GoogleSignInButton } from "@/components/google-sign-in-button";
 import { LoginForm } from "@/components/login-form";
 import { isPasswordAuthEnabled } from "@/lib/auth-mode";
@@ -39,6 +38,8 @@ export default async function LoginPage({
     <main>
       <AuthSplitFrame
         title="Sign in to Ziki"
+        mode="signin"
+        modeSwitch={{ callbackUrl }}
         description={
           passwordEnabled
             ? "Sign in with Google or your email to report, prioritize and track issues."
@@ -96,17 +97,6 @@ export default async function LoginPage({
             </p>
           </div>
         )}
-
-        {/* #onboarding: newcomers shouldn't have to guess that signing in also signs up. */}
-        <p className="text-center text-sm text-zk-text2">
-          New to Ziki?{" "}
-          <Link
-            href={`/signup?callbackUrl=${encodeURIComponent(callbackUrl)}`}
-            className="font-semibold text-zk-accent underline-offset-4 hover:underline"
-          >
-            Create an account
-          </Link>
-        </p>
 
         <AuthLegalNote />
       </AuthSplitFrame>

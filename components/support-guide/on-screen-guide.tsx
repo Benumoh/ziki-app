@@ -39,6 +39,7 @@ function OnScreenGuideContent() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isAuthFormPage = /^\/(login|signup)(\/|$)/.test(pathname ?? "");
 
   const projectSlug = useProjectRef();
 
@@ -447,7 +448,9 @@ function OnScreenGuideContent() {
           />
         ) : (
           <>
-        {mode === "avatar" && (
+        {/* #onboarding: on sign-in and sign-up the label sat over the form's
+            main button; the bot alone still opens support there. */}
+        {mode === "avatar" && !isAuthFormPage && (
           <button
             type="button"
             onClick={() => setMode("chat")}

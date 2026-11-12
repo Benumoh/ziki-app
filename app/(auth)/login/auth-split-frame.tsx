@@ -23,7 +23,27 @@ function CheckIcon() {
   );
 }
 
-function BrandPanel() {
+const BRAND_COPY = {
+  signin: {
+    chip: "Issue tracking for teams and their AI agents",
+    lead: "Every bug, voted up",
+    accent: "and shipped.",
+    body: "Report issues, vote on what matters and track every fix — alongside your team and your agents.",
+    points: ["Report", "Prioritize", "Track", "Earn $"],
+  },
+  signup: {
+    chip: "Free to join",
+    lead: "Say what you want.",
+    accent: "Watch it ship.",
+    body: "Share ideas in plain words, and people and AI agents turn them into shipped improvements you can follow.",
+    points: ["Share ideas", "Contribute and earn", "Bring your AI agents"],
+  },
+} as const;
+
+export type AuthMode = keyof typeof BRAND_COPY;
+
+function BrandPanel({ mode }: { mode: AuthMode }) {
+  const copy = BRAND_COPY[mode];
   return (
     <section
       aria-label="About Ziki"
@@ -73,17 +93,15 @@ function BrandPanel() {
       <div className="relative flex max-w-[520px] flex-col gap-[18px]">
         <span className="inline-flex items-center gap-2 self-start rounded-full border border-[#263B63] bg-[rgba(38,59,99,0.55)] px-3 py-1.5 text-[13px] font-semibold text-[#C9D6EF]">
           <span className="size-[7px] rounded-full bg-sky-tint" aria-hidden="true" />
-          Issue tracking for teams and their AI agents
+          {copy.chip}
         </span>
-        <h1 className="text-[clamp(34px,3.6vw,50px)] leading-[1.08] font-extrabold tracking-[-0.03em]">
-          Every bug, voted up
+        {/* The form's card title is the page's main heading; this one is supporting copy. */}
+        <p className="text-[clamp(34px,3.6vw,50px)] leading-[1.08] font-extrabold tracking-[-0.03em]">
+          {copy.lead}
           <br />
-          <span className="text-sky-tint">and shipped.</span>
-        </h1>
-        <p className="text-[17px] leading-relaxed text-[#C9D6EF]">
-          Report issues, vote on what matters and track every fix — alongside your team and
-          your agents.
+          <span className="text-sky-tint">{copy.accent}</span>
         </p>
+        <p className="text-[17px] leading-relaxed text-[#C9D6EF]">{copy.body}</p>
       </div>
 
       <div
@@ -161,7 +179,7 @@ function BrandPanel() {
       </div>
 
       <div className="relative flex flex-wrap gap-6 text-sm text-[#C9D6EF]">
-        {["Report", "Prioritize", "Track", "Earn $"].map((label) => (
+        {copy.points.map((label) => (
           <span key={label} className="inline-flex items-center gap-2">
             <CheckIcon />
             {label}
@@ -277,8 +295,45 @@ function AuthFooter() {
 }
 
 /**
+ * #onboarding: "Sign in | Create account" at the top of those two cards, a
+ * segmented control in the handoff's pill style. Plain links, so each tab is
+ * its own page and keeps the callback.
+ */
+function AuthModeSwitch({ mode, callbackUrl }: { mode: AuthMode; callbackUrl: string }) {
+  const query = `?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+  const tabs = [
+    { mode: "signin" as const, label: "Sign in", href: `/login${query}` },
+    { mode: "signup" as const, label: "Create account", href: `/signup${query}` },
+  ];
+  return (
+    <nav aria-label="Sign in or create an account" className="grid grid-cols-2 gap-1 rounded-full bg-zk-seg p-1">
+      {tabs.map((tab) => {
+        const active = tab.mode === mode;
+        return (
+          <Link
+            key={tab.mode}
+            href={tab.href}
+            aria-current={active ? "page" : undefined}
+            className={[
+              "flex h-10 items-center justify-center rounded-full text-sm font-bold transition",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric-blue",
+              active
+                ? "bg-zk-surface text-zk-text shadow-[0_2px_8px_rgba(11,23,51,0.10)]"
+                : "text-zk-muted hover:text-zk-text",
+            ].join(" ")}
+          >
+            {tab.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+/**
  * Split auth chrome from Login.dc.html: navy brand panel + surface card.
- * Shared by login, forgot/reset password, and join. Signup still redirects.
+ * Shared by login, signup, forgot/reset password, and join. `modeSwitch`
+ * shows the Sign in / Create account control (login and signup only).
  */
 export function AuthSplitFrame({
   children,
@@ -287,6 +342,8 @@ export function AuthSplitFrame({
   title,
   description,
   mark = true,
+  mode = "signin",
+  modeSwitch,
 }: {
   children: ReactNode;
   panelLabel?: string;
@@ -294,6 +351,8 @@ export function AuthSplitFrame({
   title: string;
   description?: ReactNode;
   mark?: boolean;
+  mode?: AuthMode;
+  modeSwitch?: { callbackUrl: string };
 }) {
   return (
     // #onboarding: the form comes first in the page, so phones show it before
@@ -302,18 +361,20 @@ export function AuthSplitFrame({
     <div className="zk-motion ziki-auth-frame flex min-h-screen flex-col bg-zk-bg text-zk-text lg:flex-row-reverse">
       <section
         aria-label={panelLabel}
-        className="relative flex w-full flex-col items-center justify-center gap-7 px-6 py-10 sm:px-8 lg:flex-[1_1_480px]"
+        // Phones get room above the card for the theme toggle, so they never overlap.
+        className="relative flex w-full flex-col items-center justify-center gap-7 px-4 pt-20 pb-10 sm:px-8 lg:flex-[1_1_480px] lg:py-10"
       >
-        <div className="absolute top-6 right-6">
+        <div className="absolute top-5 right-5 sm:top-6 sm:right-6">
           <ThemeToggle />
         </div>
 
-        <div className="ziki-auth-card-in flex w-full max-w-[440px] flex-col gap-6 rounded-3xl border border-zk-border bg-zk-surface p-7 shadow-[0_30px_70px_rgba(11,23,51,0.10)] sm:p-9">
+        <div className="ziki-auth-card-in flex w-full max-w-[440px] flex-col gap-6 rounded-3xl border border-zk-border bg-zk-surface p-6 shadow-[0_30px_70px_rgba(11,23,51,0.10)] sm:p-9">
+          {modeSwitch ? <AuthModeSwitch mode={mode} callbackUrl={modeSwitch.callbackUrl} /> : null}
           <div className="flex flex-col gap-3.5">
             {mark ? <AuthCardMark /> : null}
-            <h2 className="text-[28px] font-extrabold tracking-[-0.02em] text-zk-text">
+            <h1 className="text-[28px] font-extrabold tracking-[-0.02em] text-zk-text">
               {title}
-            </h2>
+            </h1>
             {description ? (
               <div className="text-[15px] leading-relaxed text-zk-muted">{description}</div>
             ) : null}
@@ -333,17 +394,17 @@ export function AuthSplitFrame({
 
         <AuthFooter />
       </section>
-      <BrandPanel />
+      <BrandPanel mode={mode} />
     </div>
   );
 }
 
 export function AuthLegalNote() {
   return (
+    // Plain text, not link-coloured: there are no Terms or Privacy pages to open yet.
     <p className="text-center text-xs leading-relaxed text-zk-muted">
-      By continuing, you agree to Ziki&apos;s{" "}
-      <span className="font-semibold text-zk-accent">Terms</span> and{" "}
-      <span className="font-semibold text-zk-accent">Privacy Policy</span>.
+      By continuing, you agree to Ziki&apos;s <span className="font-semibold text-zk-text2">Terms</span> and{" "}
+      <span className="font-semibold text-zk-text2">Privacy Policy</span>.
     </p>
   );
 }

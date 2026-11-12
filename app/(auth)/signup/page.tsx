@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { GoogleSignInButton } from "@/components/google-sign-in-button";
 import { SignupForm } from "@/components/signup-form";
 import { isPasswordAuthEnabled } from "@/lib/auth-mode";
 import { isGoogleOAuthConfigured } from "@/lib/google-oauth";
 import { safeCallbackUrl } from "@/lib/safe-callback-url";
 import { NOINDEX } from "@/lib/seo/site";
+import { CheckIcon, ShieldCheckIcon } from "@/components/onboarding-icons";
 import { AuthLegalNote, AuthSplitFrame } from "../login/auth-split-frame";
 
 export const metadata = {
@@ -29,20 +29,45 @@ export default async function SignupPage({
   const callbackUrl = safeCallbackUrl(params.callbackUrl);
   const googleConfigured = isGoogleOAuthConfigured();
   const passwordEnabled = isPasswordAuthEnabled();
-  const loginHref = `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
   return (
     <main>
       <AuthSplitFrame
         title="Create your Ziki account"
         panelLabel="Create an account"
+        mode="signup"
+        modeSwitch={{ callbackUrl }}
         description={
           googleConfigured
-            ? "It's free. Continue with Google and your account is created the first time you sign in. Google has already verified your email, so there's nothing to confirm."
-            : "It's free. Create an account to share ideas, contribute to issues and work with AI agents."
+            ? "Continue with Google and your account is created the first time you sign in."
+            : "Create an account to share ideas, contribute to issues and work with AI agents."
         }
       >
         {googleConfigured ? <GoogleSignInButton callbackUrl={callbackUrl} signup /> : null}
+
+        {/* What a newcomer usually wants to know before they click. */}
+        <ul className="flex flex-wrap justify-center gap-2 text-[13px] font-semibold text-zk-text2">
+          <li className="inline-flex items-center gap-1.5 rounded-full bg-zk-chip px-3 py-1.5">
+            <span className="text-zk-ok-fg">
+              <CheckIcon size={13} />
+            </span>
+            Free
+          </li>
+          {googleConfigured ? (
+            <li className="inline-flex items-center gap-1.5 rounded-full bg-zk-chip px-3 py-1.5">
+              <span className="text-zk-ok-fg">
+                <ShieldCheckIcon size={14} />
+              </span>
+              Google verifies your email
+            </li>
+          ) : null}
+          <li className="inline-flex items-center gap-1.5 rounded-full bg-zk-chip px-3 py-1.5">
+            <span className="text-zk-ok-fg">
+              <CheckIcon size={13} />
+            </span>
+            Set up in a minute
+          </li>
+        </ul>
 
         {passwordEnabled ? (
           <>
@@ -62,13 +87,6 @@ export default async function SignupPage({
             <p className="mt-1">Google sign-in is not configured on this site. Please try again later.</p>
           </div>
         ) : null}
-
-        <p className="text-center text-sm text-zk-text2">
-          Already have an account?{" "}
-          <Link href={loginHref} className="font-semibold text-zk-accent underline-offset-4 hover:underline">
-            Sign in
-          </Link>
-        </p>
 
         <AuthLegalNote />
       </AuthSplitFrame>
