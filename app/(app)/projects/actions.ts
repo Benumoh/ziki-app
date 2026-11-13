@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth-helpers";
 import { fieldError, fromZodError } from "@/lib/form-errors";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { refererProjectRef } from "@/lib/referer-path";
 import { ideasPath, orgPath, projectRef } from "@/lib/project-paths";
 import { currentOrganisationIdFor, NO_ORGANISATION_MESSAGE } from "@/lib/organisation-context";
@@ -25,6 +25,9 @@ import {
 } from "@/lib/points/platform-rewards";
 import { parseProjectRewardConfig } from "@/lib/points/project-rewards";
 import { recordFirstProjectStep } from "@/lib/onboarding-state";
+import { consumeRateLimit } from "@/lib/rate-limit";
+import { checkSite } from "@/lib/site-fetch";
+import type { SiteCheck } from "@/lib/site-check";
 
 export type ProjectActionResult = {
   error?: string;
@@ -177,7 +180,11 @@ export async function saveProjectLinksAction(
   }
   if (Object.keys(changes).length > 0) {
     await prisma.$transaction(async (tx) => {
-      await tx.project.update({ where: { id: project.id }, data: parsed.data });
+      await tx.project.update({
+        where: { id: project.id },
+        // #site-glance: a new address makes the last quick look out of date.
+        data: { ...parsed.data, ...(changes.siteUrl ? { siteCheck: Prisma.DbNull, siteCheckedAt: null } : {}) },
+      });
       await tx.projectAuditEvent.create({
         data: { organisationId, projectId: project.id, actorUserId: user.id, action: "settings.updated", changes: changes as Prisma.InputJsonValue },
       });
@@ -187,6 +194,37 @@ export async function saveProjectLinksAction(
   if (!project.siteUrl && parsed.data.siteUrl) await recordFirstProjectStep(user.id, "website_saved");
   revalidatePath("/", "layout");
   return { message: "Saved." };
+}
+
+export type SiteCheckActionResult = { ok: true; check: SiteCheck } | { ok: false; error: string };
+
+/**
+ * #site-glance: take the quick look at a project's site now and keep the result on the project. Anyone who may
+ * work on the project can ask, a few times per project every ten minutes; the site is read once per check.
+ */
+export async function checkProjectSiteAction(projectId: string): Promise<SiteCheckActionResult> {
+  const user = await requireUser();
+  const project = await prisma.project.findFirst({
+    where: { id: String(projectId), archivedAt: null },
+    select: { id: true, organisationId: true, siteUrl: true },
+  });
+  if (!project) return { ok: false, error: "Project not found." };
+  const allowed =
+    isSuperAdmin(user.role as AppRole) ||
+    Boolean(await prisma.membership.findFirst({ where: { organisationId: project.organisationId, userId: user.id }, select: { id: true } })) ||
+    Boolean(await prisma.projectMembership.findFirst({ where: { projectId: project.id, userId: user.id }, select: { id: true } }));
+  if (!allowed) return { ok: false, error: "Only people on this project can check its site." };
+  if (!project.siteUrl) return { ok: false, error: "Add the site's address first." };
+
+  const limit = await consumeRateLimit(`site-check:${project.id}`, { max: 5, windowMs: 10 * 60 * 1000 });
+  if (!limit.allowed) return { ok: false, error: "That's a few checks in a row. Try again in a few minutes." };
+
+  const check = await checkSite(project.siteUrl);
+  await prisma.project.update({
+    where: { id: project.id },
+    data: { siteCheck: check as unknown as Prisma.InputJsonValue, siteCheckedAt: new Date(check.checkedAt) },
+  });
+  return { ok: true, check };
 }
 
 /** Create a route/role/viewport mission set for a project (#619). */

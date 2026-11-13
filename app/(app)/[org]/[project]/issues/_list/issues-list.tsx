@@ -8,6 +8,7 @@ import { POSSIBLY_DELIVERED_STATUS, POSSIBLY_DELIVERED_WHERE, deliverySignals, t
 import Link from "next/link";
 import { EarnPanel } from "@/components/earn-panel";
 import { GettingStarted } from "@/components/getting-started";
+import { parseSiteCheck } from "@/lib/site-check";
 import { earnBannerLine, newestOpenProjectFor, type EarnBannerProject } from "@/lib/earn-banner";
 import { newIssueHref } from "@/lib/reported-from";
 import "./issues.css";
@@ -685,7 +686,7 @@ export async function IssuesList({
   const rejectedIdeaWhere: Prisma.IdeaWhereInput = { ...ideaWhere, status: { in: ["rejected", "archived"] } };
   // #project-links: the project's site and GitHub repository, and whether you can set them.
   const [projectLinks, canEditProjectLinks] = await Promise.all([
-    loadOrEmpty("project links", () => prisma.project.findUnique({ where: { id: project.id }, select: { siteUrl: true, repoUrl: true } }), null),
+    loadOrEmpty("project links", () => prisma.project.findUnique({ where: { id: project.id }, select: { siteUrl: true, repoUrl: true, siteCheck: true } }), null),
     organisationId && userId ? loadOrEmpty("project admin", () => isAdminOfOrganisation(user, organisationId), false) : Promise.resolve(false),
   ]);
   // #agent-work-gate: your agents that aren't allowed to work until their profile is set up.
@@ -1604,6 +1605,8 @@ export async function IssuesList({
           hasIdeas={gettingStarted.hasIdeas}
           agentCount={gettingStarted.agentCount}
           agentHref="/settings/connect"
+          projectId={project.id}
+          siteCheck={parseSiteCheck(projectLinks.siteCheck)}
         />
       </div>
     ) : null}
