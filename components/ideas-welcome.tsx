@@ -34,15 +34,21 @@ export function IdeasWelcome({ projectId }: { projectId: string }) {
           placeholder="e.g. “The checkout button does nothing on mobile”"
         />
       </div>
-      <ol aria-label="How it works" className="mt-6 flex list-none flex-wrap items-center justify-center gap-x-2 gap-y-1 p-0 text-[13px] text-zk-muted">
-        {FLOW.map((step, index) => (
-          <li key={step} className="flex items-center gap-2">
-            {index > 0 ? <span aria-hidden="true">→</span> : null}
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-zk-chip text-[11px] font-bold text-zk-text2">{index + 1}</span>
-            {step}
-          </li>
-        ))}
-      </ol>
+      {/* A section of its own, set apart from the box and its starters by space and a hairline. */}
+      <div className="mt-10 w-full border-t border-zk-border pt-6">
+        <h3 id="ideas-how-heading" className="text-[11px] font-bold uppercase tracking-[0.08em] text-zk-muted">How it works</h3>
+        <ol aria-labelledby="ideas-how-heading" className="mt-3 flex list-none flex-wrap items-center justify-center gap-x-3 gap-y-2 p-0 text-[13px] text-zk-text2">
+          {FLOW.map((step, index) => (
+            <li key={step} className="flex items-center gap-3">
+              {index > 0 ? <span aria-hidden="true" className="text-zk-muted">→</span> : null}
+              <span className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zk-tint text-[11px] font-bold text-zk-accent">{index + 1}</span>
+                {step}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
     </section>
   );
 }

@@ -163,7 +163,12 @@ export function IdeaChat({
           // the rest of the bar (its own row when there's no room) and the bar grows to hold it.
           className={`min-w-0 flex-1 basis-72 ${className}`}
         >
-          <div className="rounded-[22px] border border-zk-border bg-zk-surface px-4 pb-2.5 pt-3 shadow-[0_2px_10px_rgba(0,0,0,0.06)] focus-within:border-electric-blue-strong/50">
+          {/* The welcome's box (alwaysOpen) is roomier: more padding, and its buttons on their own strip below a divider. */}
+          <div
+            className={`rounded-[22px] border border-zk-border bg-zk-surface shadow-[0_2px_10px_rgba(0,0,0,0.06)] transition-[border-color,box-shadow] focus-within:border-electric-blue-strong/50 ${
+              alwaysOpen ? "px-5 pb-3 pt-4 focus-within:shadow-[0_0_0_4px_var(--color-zk-tint)]" : "px-4 pb-2.5 pt-3"
+            }`}
+          >
             <label htmlFor={boxId} className="sr-only">Your idea</label>
             <textarea
               id={boxId}
@@ -181,7 +186,7 @@ export function IdeaChat({
                 }
               }}
               // The welcome's box opens two lines tall, so it reads as a place to write, not a search field.
-              className={`block max-h-[220px] w-full resize-none ${alwaysOpen ? "min-h-[56px]" : "min-h-[28px]"} border-0 bg-transparent p-1 text-[15px] leading-6 text-zk-text placeholder:text-zk-muted focus:outline-none`}
+              className={`block max-h-[220px] w-full resize-none ${alwaysOpen ? "min-h-[120px]" : "min-h-[28px]"} border-0 bg-transparent p-1 text-[15px] leading-6 text-zk-text placeholder:text-zk-muted focus:outline-none`}
             />
             {uploads.length ? (
               <ul className="m-0 mt-1 flex list-none flex-wrap gap-1.5 p-0">
@@ -197,7 +202,7 @@ export function IdeaChat({
             {/* While the idea goes to Claude to be written up, show the work happening. */}
             {pending ? <ClaudeWorking className="mt-2" /> : null}
             {error ? <p role="alert" className="m-0 mt-1 px-1 text-xs text-zk-bad-fg">{error}</p> : null}
-            <div className="mt-2 flex items-center justify-between">
+            <div className={`flex items-center justify-between ${alwaysOpen ? "-mx-2 mt-3 border-t border-zk-border px-0 pt-3" : "mt-2"}`}>
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
