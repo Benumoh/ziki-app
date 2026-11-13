@@ -1193,17 +1193,8 @@ export async function IssuesList({
         {isIdeasView && !isDeletedView && earnProject ? <EarnPanel project={earnProject} line={earnBannerLine(earnProject)} /> : null}
 
         <AgentSetupNotice agents={unconfiguredAgents} />
-        {gettingStartedShown && gettingStarted && projectLinks ? (
-          <GettingStarted
-            slug={slug}
-            siteUrl={projectLinks.siteUrl}
-            repoUrl={projectLinks.repoUrl}
-            canEditLinks={canEditProjectLinks}
-            hasIdeas={gettingStarted.hasIdeas}
-            agentCount={gettingStarted.agentCount}
-            agentHref="/settings/connect"
-          />
-        ) : nextStep && organisationId ? (
+        {/* Getting started is drawn above the panel, on its own (see below); the next-step card stays here. */}
+        {gettingStartedShown ? null : nextStep && organisationId ? (
           <OrganisationNextStepCard step={nextStep} organisationId={organisationId} />
         ) : null}
 
@@ -1598,6 +1589,22 @@ export async function IssuesList({
       </div>
     </div>
     {/* The Ideas panel is narrower and centred, so each idea's status sits close to it. */}
+    {/* Getting started (#getting-started) sits between the stages and the panel, on the page itself: setting up
+        the project is a separate thing from the project's ideas. */}
+    {gettingStartedShown && gettingStarted && projectLinks ? (
+      // empty:hidden: once finished it draws nothing, and its space goes with it.
+      <div className={`mx-auto mb-4 w-full empty:hidden ${isIdeasView ? "max-w-[920px]" : "max-w-6xl"}`}>
+        <GettingStarted
+          slug={slug}
+          siteUrl={projectLinks.siteUrl}
+          repoUrl={projectLinks.repoUrl}
+          canEditLinks={canEditProjectLinks}
+          hasIdeas={gettingStarted.hasIdeas}
+          agentCount={gettingStarted.agentCount}
+          agentHref="/settings/connect"
+        />
+      </div>
+    ) : null}
     <div className={`issues-page mx-auto w-full space-y-5 ${isIdeasView ? "max-w-[920px]" : "max-w-6xl"} ${ideasWelcomeShown ? "issues-page--bare" : ""}`}>
       {headerContent}
       <div className="flex items-start gap-5 max-lg:flex-col max-lg:gap-3">
