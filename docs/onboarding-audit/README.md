@@ -62,6 +62,17 @@ the project (done), the site's address, a first idea, and an AI agent
 both. Posting a first idea answers at once: the idea page says "Your first idea
 is in" and what happens to it next.
 
+**Your site at a glance (#site-glance).** Once the site's address is saved,
+Get started takes one quick, free look at its public homepage: whether it
+loads, how fast it answers, a page title and search description, phone
+layout, the page language, images without descriptions, the page's size, and
+two basic security headers. Findings show worst first, each with "Post as
+idea", which puts a written-up idea in the idea box. The address gets the
+webhooks' guard (HTTPS only, public addresses only, re-checked on every
+redirect), the read stops at 8 seconds or 600 KB, a project may be checked 5
+times every 10 minutes, and the last result is kept on the project
+(`siteCheck`, cleared when the address changes).
+
 **Feedback prompt.** Once there is something to rate (right after the
 person's first idea, or a day after the welcome for someone who hasn't posted
 one), a small card asks "How was your

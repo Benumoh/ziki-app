@@ -5,6 +5,7 @@ import { unstable_rethrow } from "next/navigation";
 import { createBugAction } from "@/app/actions/issues";
 import { ClaudeWorking } from "@/components/claude-working";
 import { BASE_PATH } from "@/lib/base-path";
+import { FILL_IDEA_EVENT } from "@/lib/idea-fill";
 import { AddIdeaModal } from "@/components/add-idea-modal";
 
 type Upload = { key: string; name: string; id?: string; error?: string };
@@ -62,6 +63,27 @@ export function IdeaChat({
     box.style.height = "auto";
     box.style.height = `${Math.min(box.scrollHeight, 220)}px`;
   }, [text, open]);
+
+  // #site-glance: "Post as idea" elsewhere on the page (lib/idea-fill.ts) puts its text here, ready to edit and send.
+  // Every box on the page hears it; one hidden by its breakpoint class can't be seen or focused, so the visible one takes it.
+  useEffect(() => {
+    const onFill = (event: Event) => {
+      const value = (event as CustomEvent<unknown>).detail;
+      if (typeof value !== "string") return;
+      setText(value);
+      setError(null);
+      setOpen(true);
+      requestAnimationFrame(() => {
+        const box = boxRef.current;
+        if (!box || box.offsetParent === null) return;
+        box.scrollIntoView({ behavior: "smooth", block: "center" });
+        box.focus({ preventScroll: true });
+        box.setSelectionRange(value.length, value.length);
+      });
+    };
+    window.addEventListener(FILL_IDEA_EVENT, onFill);
+    return () => window.removeEventListener(FILL_IDEA_EVENT, onFill);
+  }, []);
 
   // Escape closes; a click outside closes it while nothing is typed.
   useEffect(() => {

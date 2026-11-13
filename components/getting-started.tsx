@@ -3,6 +3,8 @@
 import { useActionState, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { saveProjectLinksAction, type ProjectActionResult } from "@/app/(app)/projects/actions";
+import { SiteGlance } from "@/components/site-glance";
+import type { SiteCheck } from "@/lib/site-check";
 import {
   currentStep,
   gettingStartedFinished,
@@ -63,7 +65,13 @@ export function GettingStarted({
   hasIdeas,
   agentCount,
   agentHref,
+  projectId,
+  siteCheck,
 }: {
+  /** For the quick look at the site (#site-glance). */
+  projectId: string;
+  /** The last quick look at the site, if any. */
+  siteCheck: SiteCheck | null;
   slug: string;
   siteUrl: string | null;
   repoUrl: string | null;
@@ -303,6 +311,11 @@ export function GettingStarted({
           );
         })}
       </ol>
+
+      {/* #site-glance: once the site is known, a quick look at it, with each finding ready to post as an idea. */}
+      {siteUrl || savedSite ? (
+        <SiteGlance projectId={projectId} siteUrl={siteUrl ?? submitted} initialCheck={siteCheck} autoRun={savedSite} />
+      ) : null}
     </section>
   );
 }
