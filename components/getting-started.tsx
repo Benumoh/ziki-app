@@ -97,16 +97,21 @@ export function GettingStarted({
   // Hidden: one quiet line in its place, so the list can always be brought back.
   if (hidden) {
     return (
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-dashed border-zk-border px-4 py-2.5 text-[13px] text-zk-text2 print:hidden">
-        <span>
-          Setup: <span className="tabular-nums">{doneCount} of {steps.length}</span> done
-        </span>
+      // The same face as the list (soft grey, its corners), folded to one row: progress on the left, Show on the right.
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zk-border bg-zk-bg px-4 py-3 print:hidden sm:px-5">
+        <div className="flex items-center gap-3 text-[13px] text-zk-text2">
+          <span className="font-semibold text-zk-text">Get started</span>
+          <span aria-hidden="true" className="block h-1.5 w-20 overflow-hidden rounded-full bg-zk-border">
+            <span className="block h-full rounded-full bg-zk-ok-fg" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
+          </span>
+          <span className="tabular-nums">{doneCount} of {steps.length} done</span>
+        </div>
         <button
           type="button"
           onClick={() => write(hiddenKey(slug), "")}
-          className="font-semibold text-zk-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-electric-blue"
+          className="inline-flex min-h-8 items-center rounded-full border border-zk-border bg-zk-surface px-3.5 text-[13px] font-semibold text-zk-text transition-colors hover:border-electric-blue-strong/40 hover:text-zk-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-electric-blue"
         >
-          Show setup checklist
+          Show checklist
         </button>
       </div>
     );
@@ -124,9 +129,14 @@ export function GettingStarted({
   }
 
   return (
-    <section aria-labelledby="getting-started-heading" className="rounded-[20px] border border-zk-border bg-zk-surface p-5 print:hidden sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="getting-started-heading" className="text-lg font-extrabold tracking-tight text-zk-text">Get started</h2>
+    // Soft grey, so it reads as a separate thing on the white page without a second heavy border;
+    // the steps sit in one white list inside it.
+    <section aria-labelledby="getting-started-heading" className="rounded-2xl border border-zk-border bg-zk-bg p-4 print:hidden sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3 px-1">
+        <div>
+          <h2 id="getting-started-heading" className="text-base font-extrabold tracking-tight text-zk-text">Get started</h2>
+          <p className="mt-0.5 text-[13px] text-zk-text2">A few quick steps to set up your project.</p>
+        </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-[13px] tabular-nums text-zk-text2">
             <span
@@ -135,7 +145,7 @@ export function GettingStarted({
               aria-valuemin={0}
               aria-valuemax={steps.length}
               aria-valuenow={doneCount}
-              className="block h-2 w-28 overflow-hidden rounded-full bg-zk-chip"
+              className="block h-1.5 w-24 overflow-hidden rounded-full bg-zk-border"
             >
               <span className="block h-full rounded-full bg-zk-ok-fg transition-[width] duration-300" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
             </span>
@@ -147,7 +157,7 @@ export function GettingStarted({
         </div>
       </div>
 
-      <ol className="mt-4 flex list-none flex-col gap-2 p-0">
+      <ol className="mt-4 list-none divide-y divide-zk-border overflow-hidden rounded-xl border border-zk-border bg-zk-surface p-0">
         {steps.map((step, index) => {
           const isCurrent = step.id === current;
           const isOpen = step.id === open && !step.done;
@@ -157,17 +167,22 @@ export function GettingStarted({
             <>
               <span
                 aria-hidden="true"
-                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold ${
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
                   step.done
-                    ? "border-zk-ok-fg bg-zk-ok-fg text-zk-surface"
+                    ? "bg-zk-ok-bg text-zk-ok-fg"
                     : isCurrent
-                      ? "border-electric-blue-strong text-zk-accent"
-                      : "border-zk-border text-zk-muted"
+                      ? "bg-electric-blue-strong text-white"
+                      : "border border-zk-border text-zk-muted"
                 }`}
               >
-                {step.done ? "✓" : index + 1}
+                {step.done ? (
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+                ) : (
+                  index + 1
+                )}
               </span>
-              <span className={`min-w-0 flex-1 text-[15px] font-semibold ${step.done ? "text-zk-muted line-through decoration-zk-muted/60" : "text-zk-text"}`}>
+              {/* Done steps go quiet rather than struck through: finished, not wrong. */}
+              <span className={`min-w-0 flex-1 text-sm ${step.done ? "font-medium text-zk-muted" : "font-semibold text-zk-text"}`}>
                 {step.title}
                 <span className="sr-only">{step.done ? " (done)" : isSkipped ? " (skipped)" : ""}</span>
               </span>
@@ -180,25 +195,24 @@ export function GettingStarted({
             </>
           );
           return (
-            <li
-              key={step.id}
-              className={`overflow-hidden rounded-xl border ${isCurrent ? "border-electric-blue-strong ring-[3px] ring-zk-tint" : "border-zk-border"}`}
-            >
+            // The current step is tinted: the one place to look.
+            <li key={step.id} className={isCurrent ? "bg-zk-tint/50" : ""}>
               {step.done ? (
-                <div className="flex items-center gap-3 px-3.5 py-3">{head}</div>
+                <div className="flex items-center gap-3 px-4 py-2.5">{head}</div>
               ) : (
                 <button
                   type="button"
                   aria-expanded={isOpen}
                   aria-controls={bodyId}
                   onClick={() => setOpenId(isOpen ? null : step.id)}
-                  className="flex w-full items-center gap-3 px-3.5 py-3 text-left hover:bg-zk-chip/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-electric-blue"
+                  className={`flex w-full items-center gap-3 px-4 py-3 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-electric-blue ${isCurrent ? "" : "hover:bg-zk-chip/50"}`}
                 >
                   {head}
                 </button>
               )}
               {isOpen ? (
-                <div id={bodyId} className="px-3.5 pb-4 sm:pl-[52px]">
+                // Indented to the title's words (16px padding + 24px marker + 12px gap).
+                <div id={bodyId} className="px-4 pb-4 sm:pl-[52px]">
                   {step.id === "website" ? (
                     canEditLinks ? (
                       <form
