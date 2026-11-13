@@ -33,7 +33,8 @@ export function gettingStartedSteps({ hasSite, hasIdeas, agentCount }: GettingSt
     { id: "idea", title: "Post your first idea", done: hasIdeas, optional: false },
   ];
   if (agentCount !== null) {
-    steps.push({ id: "agent", title: "Connect an AI agent", done: agentCount > 0, optional: true });
+    // Named as the welcome checklist names it (#onboarding), so the two lists read as one journey.
+    steps.push({ id: "agent", title: "Set up an AI agent", done: agentCount > 0, optional: true });
   }
   return steps;
 }

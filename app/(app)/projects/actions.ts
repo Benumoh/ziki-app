@@ -24,6 +24,7 @@ import {
   projectDefaultsFromPlatform,
 } from "@/lib/points/platform-rewards";
 import { parseProjectRewardConfig } from "@/lib/points/project-rewards";
+import { recordFirstProjectStep } from "@/lib/onboarding-state";
 
 export type ProjectActionResult = {
   error?: string;
@@ -182,6 +183,8 @@ export async function saveProjectLinksAction(
       });
     });
   }
+  // #getting-started: a newcomer's site saved for the first time is a funnel step.
+  if (!project.siteUrl && parsed.data.siteUrl) await recordFirstProjectStep(user.id, "website_saved");
   revalidatePath("/", "layout");
   return { message: "Saved." };
 }

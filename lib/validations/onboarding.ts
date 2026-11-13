@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FEEDBACK_COMMENT_MAX, LAST_ONBOARDING_STEP, ONBOARDING_GOALS } from "@/lib/onboarding-flow";
+import { CHECKLIST_LINK_TASKS, FEEDBACK_COMMENT_MAX, LAST_ONBOARDING_STEP, ONBOARDING_GOALS } from "@/lib/onboarding-flow";
 
 /** #onboarding: saving where someone is in the welcome flow. */
 export const onboardingProgressSchema = z.object({
@@ -7,9 +7,10 @@ export const onboardingProgressSchema = z.object({
   goal: z.enum(ONBOARDING_GOALS).nullable().optional(),
 });
 
-/** #onboarding: finishing the flow on the first-action step needs the goal it was built for. */
-export const onboardingCompleteSchema = z.object({
-  goal: z.enum(ONBOARDING_GOALS, { error: "Choose what you'd like to do first." }),
+/** #onboarding: a welcome checklist button that leads out of the page. */
+export const onboardingTaskSchema = z.object({
+  task: z.enum(CHECKLIST_LINK_TASKS),
+  link: z.enum(["primary", "secondary"]),
 });
 
 /** #onboarding: the first-experience feedback prompt. */

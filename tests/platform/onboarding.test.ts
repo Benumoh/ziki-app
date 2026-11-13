@@ -34,18 +34,20 @@ vi.mock("@/lib/rate-limit", () => ({ consumeRateLimit, RATE_LIMIT_MESSAGE: "Slow
 vi.mock("@/lib/logger", () => ({ logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } }));
 
 import {
-  completeOnboardingAction,
   dismissOnboardingFeedbackAction,
+  startChecklistTaskAction,
   saveOnboardingProgressAction,
   skipOnboardingAction,
   submitOnboardingFeedbackAction,
 } from "@/app/actions/onboarding";
 import {
   FEEDBACK_MAX_SNOOZES,
+  FEEDBACK_WAIT_MS,
   feedbackPromptVisible,
-  firstActionPath,
+  checklistProgress,
+  openTaskFor,
+  type ChecklistStatus,
   needsWelcome,
-  resumeStep,
   snoozeFeedback,
   type OnboardingState,
 } from "@/lib/onboarding-flow";
@@ -95,18 +97,18 @@ describe("who sees the welcome flow", () => {
     expect(needsWelcome({ ...fresh, skippedAt: now }, false)).toBe(false);
   });
 
-  it("resumes at the saved step, but back on the goal picker when no goal was saved", () => {
-    expect(resumeStep({ step: 1, goal: null })).toBe(1);
-    expect(resumeStep({ step: 2, goal: "work_with_agents" })).toBe(2);
-    expect(resumeStep({ step: 2, goal: null })).toBe(1);
-    expect(resumeStep({ step: 9, goal: "explore_projects" })).toBe(2);
+  it("opens the checklist on the goal picker, then on the chosen goal's task, then the first one left", () => {
+    const start: ChecklistStatus = { account: true, goal: false, organisation: false, project: false, agent: false };
+    expect(openTaskFor(start, null)).toBe("goal");
+    const withGoal = { ...start, goal: true };
+    expect(openTaskFor(withGoal, "work_with_agents")).toBe("agent");
+    expect(openTaskFor(withGoal, "contribute_issues")).toBe("project");
+    expect(openTaskFor({ ...withGoal, agent: true }, "work_with_agents")).toBe("organisation");
+    expect(openTaskFor({ account: true, goal: true, organisation: true, project: true, agent: true }, "explore_projects")).toBeNull();
   });
 
-  it("sends each goal to its own first action", () => {
-    expect(firstActionPath("explore_projects")).toBe("/discover");
-    expect(firstActionPath("contribute_issues")).toBe("/earn");
-    expect(firstActionPath("work_with_agents")).toBe("/settings/agents");
-    expect(firstActionPath(null)).toBe("/home");
+  it("counts progress from what's actually done", () => {
+    expect(checklistProgress({ account: true, goal: true, organisation: false, project: true, agent: false })).toEqual({ done: 3, total: 5 });
   });
 });
 
@@ -162,10 +164,20 @@ describe("who is new at /home", () => {
 
 describe("the feedback prompt", () => {
   it("shows only after the welcome flow, and never once feedback is sent", () => {
-    expect(feedbackPromptVisible(fresh, false, now)).toBe(false);
-    expect(feedbackPromptVisible(finished, false, now)).toBe(true);
-    expect(feedbackPromptVisible({ ...fresh, skippedAt: now }, false, now)).toBe(true);
-    expect(feedbackPromptVisible(finished, true, now)).toBe(false);
+    const posted = { postedIdea: true };
+    expect(feedbackPromptVisible(fresh, false, now, posted)).toBe(false);
+    expect(feedbackPromptVisible(finished, false, now, posted)).toBe(true);
+    expect(feedbackPromptVisible({ ...fresh, skippedAt: now }, false, now, posted)).toBe(true);
+    expect(feedbackPromptVisible(finished, true, now, posted)).toBe(false);
+  });
+
+  it("asks once there is something to rate: right after the first idea, or a day after the welcome", () => {
+    // Just finished the welcome, nothing posted yet: not yet.
+    expect(feedbackPromptVisible(finished, false, now)).toBe(false);
+    // The first idea is in: straight away.
+    expect(feedbackPromptVisible(finished, false, now, { postedIdea: true })).toBe(true);
+    // No idea, but a day has passed since the welcome: now.
+    expect(feedbackPromptVisible(finished, false, new Date(now.getTime() + FEEDBACK_WAIT_MS))).toBe(true);
   });
 
   it("stays hidden while snoozed, then for good after the last 'Maybe later'", () => {
@@ -184,28 +196,35 @@ describe("the feedback prompt", () => {
 });
 
 describe("welcome flow actions", () => {
-  it("completes the flow once and goes to the chosen goal's first action", async () => {
-    await expect(completeOnboardingAction({ goal: "work_with_agents" })).rejects.toThrow("NEXT_REDIRECT:/settings/agents");
+  it("a checklist button finishes the flow once and goes where the button says", async () => {
+    await expect(startChecklistTaskAction({ task: "agent", link: "primary" })).rejects.toThrow("NEXT_REDIRECT:/settings/connect");
     expect(db.userOnboarding.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { userId: "user-1", completedAt: null, skippedAt: null } }),
     );
     expect(db.onboardingEvent.createMany).toHaveBeenCalledWith({
       data: [
-        { userId: "user-1", name: "onboarding_completed", goal: "work_with_agents" },
-        { userId: "user-1", name: "first_action", goal: "work_with_agents" },
+        { userId: "user-1", name: "onboarding_completed", goal: null },
+        { userId: "user-1", name: "first_action", goal: null },
       ],
     });
+    await expect(startChecklistTaskAction({ task: "organisation", link: "secondary" })).rejects.toThrow(
+      "NEXT_REDIRECT:/organisations?open=join",
+    );
   });
 
-  it("a second click on finish records nothing more but still goes on", async () => {
+  it("a second click records nothing more but still goes on", async () => {
     db.userOnboarding.updateMany.mockResolvedValue({ count: 0 });
-    await expect(completeOnboardingAction({ goal: "explore_projects" })).rejects.toThrow("NEXT_REDIRECT:/discover");
+    await expect(startChecklistTaskAction({ task: "project", link: "primary" })).rejects.toThrow("NEXT_REDIRECT:/discover");
     expect(db.onboardingEvent.createMany).not.toHaveBeenCalled();
   });
 
-  it("refuses to finish without a valid goal and writes nothing", async () => {
-    const result = await completeOnboardingAction({ goal: "rule_the_world" });
-    expect(result).toMatchObject({ ok: false, field: "goal" });
+  it("only goes to the checklist's own places, and writes nothing otherwise", async () => {
+    for (const input of [
+      { task: "account", link: "primary" },
+      { task: "agent", link: "https://evil.example" },
+    ]) {
+      await expect(startChecklistTaskAction(input)).resolves.toMatchObject({ ok: false });
+    }
     expect(db.userOnboarding.updateMany).not.toHaveBeenCalled();
     expect(redirect).not.toHaveBeenCalled();
   });

@@ -290,7 +290,7 @@ export function GettingStarted({
                         anything is merged. Without one, people and other agents can still pick up your ideas.
                       </p>
                       <div className="flex flex-wrap items-center gap-2">
-                        <Link href={agentHref} className={primary}>Connect an agent</Link>
+                        <Link href={agentHref} className={primary}>Set up an agent</Link>
                         <button type="button" onClick={() => skip(step.id)} className={ghost}>Not now</button>
                       </div>
                     </div>

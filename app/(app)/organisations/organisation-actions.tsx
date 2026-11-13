@@ -12,8 +12,8 @@ type Open = "join" | "create" | null;
  * opens a modal to paste an invite link; Create opens one to name a new
  * organisation.
  */
-export function OrganisationActions({ nameMax }: { nameMax: number }) {
-  const [open, setOpen] = useState<Open>(null);
+export function OrganisationActions({ nameMax, initialOpen = null }: { nameMax: number; initialOpen?: Open }) {
+  const [open, setOpen] = useState<Open>(initialOpen);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {

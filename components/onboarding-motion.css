@@ -1,5 +1,5 @@
-/* #onboarding: entrance motion for the welcome flow and feedback card. Off for
-   anyone who asks for reduced motion. */
+/* #onboarding: entrance motion for the welcome checklist and feedback card. Off
+   for anyone who asks for reduced motion. */
 @keyframes zk-welcome-in {
   from {
     opacity: 0;
@@ -11,32 +11,12 @@
   }
 }
 
-@keyframes zk-welcome-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
-}
-
 .zk-welcome-in {
   animation: zk-welcome-in 0.35s ease-out both;
 }
 
-.zk-welcome-float {
-  animation: zk-welcome-float 6s ease-in-out infinite;
-}
-
-.zk-welcome-float-late {
-  animation: zk-welcome-float 6s ease-in-out 1.5s infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .zk-welcome-in,
-  .zk-welcome-float,
-  .zk-welcome-float-late {
+  .zk-welcome-in {
     animation: none;
   }
 }

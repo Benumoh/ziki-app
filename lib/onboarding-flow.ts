@@ -24,9 +24,6 @@ export type GoalOption = {
   value: OnboardingGoalValue;
   title: string;
   description: string;
-  actionLabel: string;
-  actionPath: string;
-  actionHint: string;
 };
 
 export const GOAL_OPTIONS: readonly GoalOption[] = [
@@ -34,27 +31,79 @@ export const GOAL_OPTIONS: readonly GoalOption[] = [
     value: "explore_projects",
     title: "Explore projects",
     description: "See what teams are building on Ziki and follow the products you care about.",
-    actionLabel: "Browse projects",
-    actionPath: "/discover",
-    actionHint: "Discover lists public projects and the open products that accept contributors.",
   },
   {
     value: "contribute_issues",
     title: "Contribute to issues",
     description: "Pick up open issues, fix them and earn points for work that ships.",
-    actionLabel: "Find work to do",
-    actionPath: "/earn",
-    actionHint: "Earn shows how contributing pays, then points you to projects with open issues.",
   },
   {
     value: "work_with_agents",
     title: "Work with AI agents",
     description: "Set up an AI agent that bids on issues and builds fixes for you.",
-    actionLabel: "Set up an agent",
-    actionPath: "/settings/agents",
-    actionHint: "Agent settings walk you through creating an agent and connecting it.",
   },
 ];
+
+/**
+ * The welcome checklist (#onboarding): what a newcomer can do first, in any
+ * order. "account" and "goal" are done on the page itself; the rest link out,
+ * and each is ticked from real data (a membership, a project, an agent).
+ */
+export const CHECKLIST_TASKS = ["account", "goal", "organisation", "project", "agent"] as const;
+export type ChecklistTask = (typeof CHECKLIST_TASKS)[number];
+
+/** The tasks that leave the page, and where each of their two buttons goes. */
+export const CHECKLIST_LINK_TASKS = ["organisation", "project", "agent"] as const;
+export type ChecklistLinkTask = (typeof CHECKLIST_LINK_TASKS)[number];
+export type ChecklistLink = "primary" | "secondary";
+
+export const CHECKLIST_LINKS: Record<ChecklistLinkTask, Record<ChecklistLink, { label: string; path: string }>> = {
+  organisation: {
+    primary: { label: "Create organisation", path: "/organisations?open=create" },
+    secondary: { label: "Join with an invite", path: "/organisations?open=join" },
+  },
+  project: {
+    primary: { label: "Browse projects", path: "/discover" },
+    secondary: { label: "How contributing pays", path: "/earn" },
+  },
+  agent: {
+    // The same one-button page Getting started (#getting-started) and the next-step card send people to.
+    primary: { label: "Set up an agent", path: "/settings/connect" },
+    secondary: { label: "What agents do", path: "/for-agents" },
+  },
+};
+
+export function checklistLinkPath(task: ChecklistLinkTask, link: ChecklistLink): string {
+  return CHECKLIST_LINKS[task][link].path;
+}
+
+/** Which goal each task serves, so the chosen goal's task is the one suggested next. */
+const GOAL_TASK: Record<OnboardingGoalValue, ChecklistLinkTask> = {
+  explore_projects: "project",
+  contribute_issues: "project",
+  work_with_agents: "agent",
+};
+
+export function recommendedTask(goal: OnboardingGoalValue | null | undefined): ChecklistLinkTask | null {
+  return goal ? GOAL_TASK[goal] : null;
+}
+
+export type ChecklistStatus = Record<ChecklistTask, boolean>;
+
+export function checklistProgress(status: ChecklistStatus): { done: number; total: number } {
+  return { done: CHECKLIST_TASKS.filter((task) => status[task]).length, total: CHECKLIST_TASKS.length };
+}
+
+/**
+ * The task the checklist opens on: the goal picker until there's a goal, then
+ * the goal's own task if it's still to do, else the first one left.
+ */
+export function openTaskFor(status: ChecklistStatus, goal: OnboardingGoalValue | null | undefined): ChecklistTask | null {
+  if (!status.goal) return "goal";
+  const suggested = recommendedTask(goal);
+  if (suggested && !status[suggested]) return suggested;
+  return CHECKLIST_TASKS.find((task) => !status[task]) ?? null;
+}
 
 export function isOnboardingGoal(value: unknown): value is OnboardingGoalValue {
   return typeof value === "string" && (ONBOARDING_GOALS as readonly string[]).includes(value);
@@ -64,26 +113,11 @@ export function goalOption(goal: OnboardingGoalValue | null | undefined): GoalOp
   return GOAL_OPTIONS.find((option) => option.value === goal) ?? null;
 }
 
-/** Where finishing the flow takes someone. Without a goal, the normal app home. */
-export function firstActionPath(goal: OnboardingGoalValue | null | undefined): string {
-  return goalOption(goal)?.actionPath ?? "/home";
-}
-
 /** A saved step, clamped to the flow; anything unreadable starts at the beginning. */
 export function clampStep(step: unknown): number {
   const n = typeof step === "number" ? step : Number(step);
   if (!Number.isInteger(n) || n < 0) return 0;
   return Math.min(n, LAST_ONBOARDING_STEP);
-}
-
-/**
- * The step to resume on. The first-action step needs a goal, so a saved
- * step past the goal picker without one goes back to the picker.
- */
-export function resumeStep(state: { step: number; goal: OnboardingGoalValue | null }): number {
-  const step = clampStep(state.step);
-  if (step >= 2 && !state.goal) return 1;
-  return step;
 }
 
 export type OnboardingState = {
@@ -129,14 +163,26 @@ export function welcomeDue(
   return needsWelcome(state, hasOrganisation);
 }
 
-/** Whether the first-experience feedback prompt shows right now. */
+/**
+ * How long after the welcome flow the feedback prompt waits for someone who hasn't posted an idea: long enough to
+ * have tried something, so the question isn't asked before there is an experience to rate.
+ */
+export const FEEDBACK_WAIT_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Whether the first-experience feedback prompt shows right now. It asks once there is something to rate: right
+ * after the person's first idea, or a day after the welcome flow for someone who hasn't posted one.
+ */
 export function feedbackPromptVisible(
   state: OnboardingState | null,
   hasFeedback: boolean,
   now: Date = new Date(),
+  { postedIdea = false }: { postedIdea?: boolean } = {},
 ): boolean {
   if (!state || hasFeedback) return false;
   if (!onboardingFinished(state)) return false;
+  const finishedAt = state.completedAt ?? state.skippedAt;
+  if (!postedIdea && finishedAt && now.getTime() - finishedAt.getTime() < FEEDBACK_WAIT_MS) return false;
   if (state.feedbackClosedAt) return false;
   if (state.feedbackSnoozeCount >= FEEDBACK_MAX_SNOOZES) return false;
   return !state.feedbackSnoozedUntil || state.feedbackSnoozedUntil.getTime() <= now.getTime();

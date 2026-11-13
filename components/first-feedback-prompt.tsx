@@ -124,7 +124,9 @@ export function FirstFeedbackPrompt() {
             <h2 ref={headingRef} tabIndex={-1} id={headingId} className="text-base font-semibold outline-none">
               Thanks for your feedback
             </h2>
-            <p className="mt-0.5 text-sm text-zk-text2">It goes straight to the team building Ziki.</p>
+            <p className="mt-0.5 text-sm text-zk-text2">
+              It goes straight to the team building Ziki. We read every answer and use it to decide what to fix next.
+            </p>
           </div>
           {closeButton("Close", () => setOpen(false))}
         </div>

@@ -10,12 +10,12 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { withDismissed } from "@/lib/onboarding";
 import { NEXT_STEP_COOKIE, NEXT_STEP_COOKIE_MAX_AGE } from "@/lib/organisation-next-step";
-import { firstActionPath, snoozeFeedback } from "@/lib/onboarding-flow";
+import { checklistLinkPath, snoozeFeedback } from "@/lib/onboarding-flow";
 import { recordOnboardingEvent, startOnboarding } from "@/lib/onboarding-state";
 import {
-  onboardingCompleteSchema,
   onboardingFeedbackSchema,
   onboardingProgressSchema,
+  onboardingTaskSchema,
 } from "@/lib/validations/onboarding";
 import { consumeRateLimit, RATE_LIMIT_MESSAGE } from "@/lib/rate-limit";
 
@@ -87,37 +87,39 @@ export async function skipOnboardingAction(): Promise<OnboardingActionResult> {
   redirect("/home");
 }
 
-/** #onboarding: finish the flow and go to the first action for the chosen goal. */
-export async function completeOnboardingAction(input: { goal: string }): Promise<OnboardingActionResult> {
+/**
+ * #onboarding: a welcome checklist button that leads out of the page. Taking
+ * that first step finishes the welcome flow (so /home stops sending them back)
+ * and goes where the button says; only paths from the checklist are allowed.
+ */
+export async function startChecklistTaskAction(input: { task: string; link: string }): Promise<OnboardingActionResult> {
   const user = await requireUser();
-  const parsed = onboardingCompleteSchema.safeParse(input);
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Choose what you'd like to do first.", field: "goal" };
-  }
-  const { goal } = parsed.data;
+  const parsed = onboardingTaskSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "That isn't part of the welcome checklist." };
+  const { task, link } = parsed.data;
   try {
-    await startOnboarding(user.id);
+    const row = await startOnboarding(user.id);
     const now = new Date();
     await prisma.$transaction(async (tx) => {
       const { count } = await tx.userOnboarding.updateMany({
         where: { userId: user.id, completedAt: null, skippedAt: null },
-        data: { goal, step: 2, completedAt: now, firstActionAt: now },
+        data: { completedAt: now, firstActionAt: now },
       });
       if (count > 0) {
         await tx.onboardingEvent.createMany({
           data: [
-            { userId: user.id, name: "onboarding_completed", goal },
-            { userId: user.id, name: "first_action", goal },
+            { userId: user.id, name: "onboarding_completed", goal: row.goal },
+            { userId: user.id, name: "first_action", goal: row.goal },
           ],
         });
       }
     });
   } catch (error) {
-    logger.error("[onboarding] complete failed", error);
+    logger.error("[onboarding] checklist task failed", error);
     return { ok: false, error: SAVE_FAILED };
   }
   revalidatePath("/", "layout");
-  redirect(firstActionPath(goal));
+  redirect(checklistLinkPath(task, link));
 }
 
 /** #onboarding: the first-experience rating. One per person; a repeat click changes nothing. */

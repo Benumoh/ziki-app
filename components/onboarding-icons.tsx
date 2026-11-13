@@ -107,3 +107,9 @@ export function GoalIcon({ goal, size }: { goal: OnboardingGoalValue; size?: num
   if (goal === "contribute_issues") return <WrenchIcon size={size} />;
   return <AgentIcon size={size} />;
 }
+
+export const ChevronDownIcon = ({ size }: IconProps) => (
+  <Icon size={size}>
+    <path d="m6 9 6 6 6-6" />
+  </Icon>
+);

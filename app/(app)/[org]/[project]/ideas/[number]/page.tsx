@@ -16,6 +16,7 @@ import { organisationAccessFor } from "@/lib/organisation-access";
 import { LocalTime } from "@/components/local-time";
 import { ReportSummary } from "@/components/report-summary";
 import { NextStepBar } from "@/components/next-step-bar";
+import { FirstIdeaNote } from "@/components/first-idea-note";
 import { BackToList } from "@/components/back-to-list";
 import { ideaNextStep } from "@/lib/next-step";
 import { UserNameWithBadges } from "@/components/user-name-with-badges";
@@ -155,6 +156,11 @@ export default async function IdeaPage({ params, searchParams }: {
       )
     : new Map<string, string | null>();
 
+  // #getting-started: the reporter's only idea, still open, gets a note on what happens next.
+  const firstIdea =
+    idea.reporterId === user.id &&
+    idea.status === "open" &&
+    (await prisma.idea.count({ where: { reporterId: user.id }, take: 2 })) === 1;
   const marketingIdea = idea.track === "marketing";
   const closedIdea = idea.status === "rejected" || idea.status === "archived";
   const backFallback = marketingIdea
@@ -178,6 +184,7 @@ export default async function IdeaPage({ params, searchParams }: {
       <div className="flex flex-wrap items-start gap-5">
         {/* MAIN COLUMN */}
         <div className="flex min-w-0 flex-[999_1_600px] flex-col gap-5">
+          {firstIdea ? <FirstIdeaNote /> : null}
           <NextStepBar step={nextStep} />
           {securityView ? <SecurityFindingPanel view={securityView} canDisclose={securityAdmin} kind="idea" /> : null}
           <ReportSummary summary={idea.summary} />
