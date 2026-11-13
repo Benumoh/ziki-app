@@ -97,8 +97,8 @@ export function GettingStarted({
   // Hidden: one quiet line in its place, so the list can always be brought back.
   if (hidden) {
     return (
-      // The same face as the list (soft grey, its corners), folded to one row: progress on the left, Show on the right.
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zk-border bg-zk-bg px-4 py-3 print:hidden sm:px-5">
+      // The same card as the list, folded to one row: progress on the left, Show on the right.
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-zk-border bg-zk-surface px-4 py-3 print:hidden sm:px-5">
         <div className="flex items-center gap-3 text-[13px] text-zk-text2">
           <span className="font-semibold text-zk-text">Get started</span>
           <span aria-hidden="true" className="block h-1.5 w-20 overflow-hidden rounded-full bg-zk-border">
@@ -129,9 +129,9 @@ export function GettingStarted({
   }
 
   return (
-    // Soft grey, so it reads as a separate thing on the white page without a second heavy border;
-    // the steps sit in one white list inside it.
-    <section aria-labelledby="getting-started-heading" className="rounded-2xl border border-zk-border bg-zk-bg p-4 print:hidden sm:p-5">
+    // A white card of its own on the page, above the Ideas panel (not inside it), with the panel's corners;
+    // the steps sit in one bordered list inside it.
+    <section aria-labelledby="getting-started-heading" className="rounded-[12px] border border-zk-border bg-zk-surface p-4 print:hidden sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3 px-1">
         <div>
           <h2 id="getting-started-heading" className="text-base font-extrabold tracking-tight text-zk-text">Get started</h2>
