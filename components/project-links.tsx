@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { saveProjectLinksAction, type ProjectActionResult } from "@/app/(app)/projects/actions";
@@ -68,13 +68,18 @@ export function ProjectIconLinks({
   goalsHref,
   notesHref,
   settingsHref,
+  setup,
 }: {
   /** Feature plans: on the Ideas tab only. */
   featuresHref?: string;
   goalsHref?: string;
   notesHref?: string;
   settingsHref?: string;
+  /** The site and code addresses button (ProjectLinks): a setup item, so it sits with the gear. */
+  setup?: ReactNode;
 }) {
+  const hasPages = Boolean(featuresHref || goalsHref || notesHref);
+  const hasSetup = Boolean(setup || settingsHref);
   return (
     <>
       {featuresHref ? (
@@ -105,6 +110,9 @@ export function ProjectIconLinks({
           <span aria-hidden="true" className="max-lg:hidden">Notes</span>
         </Link>
       ) : null}
+      {/* The project's pages (named) first, then its setup (icons): the addresses and the settings, after a divider. */}
+      {hasPages && hasSetup ? <span aria-hidden="true" className="mx-0.5 h-5 w-px bg-zk-border" /> : null}
+      {setup}
       {settingsHref ? (
         <Link href={settingsHref} aria-label="Project settings" title="Project settings" className={ICON_BUTTON}>
           <SettingsIcon size={17} />

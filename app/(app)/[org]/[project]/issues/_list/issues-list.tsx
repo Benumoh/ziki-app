@@ -1563,22 +1563,24 @@ export async function IssuesList({
       ) : null}
       {/* ml-auto keeps the actions at the right edge, on the tabs' row or wrapped below them. */}
       <div className="ml-auto flex shrink-0 items-center gap-2 max-sm:self-end">
-        {/* The site and code addresses, then Feature plans, Goals, Project notes and the settings page. The site
-            icon always shows: Getting started can be hidden or give way to another notice, and it must not be the
-            only way to add the site. */}
-        {projectLinks && !isDeletedView ? (
-          <ProjectLinks
-            slug={slug}
-            siteUrl={projectLinks.siteUrl}
-            repoUrl={projectLinks.repoUrl}
-            canEdit={canEditProjectLinks}
-            // #agent-work-gate: a blocked agent comes first; the site URL ask waits (the icon still opens it).
-            // #getting-started asks for the site in its own list, so the panel doesn't open by itself beside it.
-            askOnLoad={isIdeasView && unconfiguredAgents.length === 0 && !gettingStartedShown}
-          />
-        ) : null}
+        {/* Feature plans, Goals and Project notes, then the setup icons together: the site and code addresses and
+            the settings page. The site icon always shows: Getting started can be hidden or give way to another
+            notice, and it must not be the only way to add the site. */}
         {!isDeletedView ? (
           <ProjectIconLinks
+            setup={
+              projectLinks ? (
+                <ProjectLinks
+                  slug={slug}
+                  siteUrl={projectLinks.siteUrl}
+                  repoUrl={projectLinks.repoUrl}
+                  canEdit={canEditProjectLinks}
+                  // #agent-work-gate: a blocked agent comes first; the site URL ask waits (the icon still opens it).
+                  // #getting-started asks for the site in its own list, so the panel doesn't open by itself beside it.
+                  askOnLoad={isIdeasView && unconfiguredAgents.length === 0 && !gettingStartedShown}
+                />
+              ) : null
+            }
             // Feature plans sits with the other project pages, on the Ideas tab where plans start from ideas.
             featuresHref={isIdeasView && canContribute ? projectPath(ref, "/features") : undefined}
             goalsHref={canContribute ? projectPath(ref, "/goals") : undefined}
