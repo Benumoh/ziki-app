@@ -29,8 +29,9 @@ function snooze(slug: string): void {
   }
 }
 
+// font-normal: inside a bold label the field would inherit its weight, and its example text read as typed.
 const input =
-  "h-9 w-full rounded-md border border-zk-border bg-zk-surface px-3 text-[13px] text-zk-text placeholder:text-zk-muted focus:border-electric-blue-strong focus:outline-none";
+  "h-9 w-full rounded-md border border-zk-border bg-zk-surface px-3 text-[13px] font-normal text-zk-text placeholder:text-zk-muted/70 focus:border-electric-blue-strong focus:outline-none";
 
 /** A gear: the project's settings (ProjectIconLinks). */
 function SettingsIcon({ size }: { size: number }) {

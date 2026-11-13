@@ -40,8 +40,10 @@ function subscribe(onChange: () => void) {
   };
 }
 
+// font-normal: the fields sit inside their (bold) labels and would inherit the weight, so the example text read
+// like something already typed. The example text is also a shade lighter than the muted text around it.
 const input =
-  "h-10 w-full rounded-lg border border-zk-border bg-zk-surface px-3 text-sm text-zk-text placeholder:text-zk-muted focus:border-electric-blue-strong focus:outline-none";
+  "h-10 w-full rounded-lg border border-zk-border bg-zk-surface px-3 text-sm font-normal text-zk-text placeholder:text-zk-muted/70 focus:border-electric-blue-strong focus:outline-none";
 const primary =
   "inline-flex min-h-10 items-center justify-center rounded-full bg-zk-text px-5 text-sm font-bold text-zk-surface transition hover:opacity-90 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-electric-blue";
 const ghost =
