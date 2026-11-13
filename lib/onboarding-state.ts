@@ -9,6 +9,7 @@ import {
   feedbackPromptVisible,
   isOnboardingGoal,
   welcomeDue,
+  type ChecklistStatus,
   type OnboardingGoalValue,
   type OnboardingState,
 } from "@/lib/onboarding-flow";
@@ -42,6 +43,32 @@ function toRow(row: Prisma.UserOnboardingGetPayload<{ select: typeof ONBOARDING_
 export async function loadOnboarding(userId: string): Promise<OnboardingRow | null> {
   const row = await prisma.userOnboarding.findUnique({ where: { userId }, select: ONBOARDING_SELECT });
   return row ? toRow(row) : null;
+}
+
+/**
+ * #onboarding: which welcome checklist tasks are done, read from real data. A
+ * super admin's automatic main-organisation ownership doesn't count as joining one.
+ */
+export async function loadChecklistStatus(
+  user: { id: string; role: Parameters<typeof isSuperAdmin>[0]; email?: string | null },
+  goal: string | null,
+): Promise<ChecklistStatus> {
+  const superAdmin = isSuperAdmin(user.role) || isSuperAdminEmail(user.email);
+  const [membership, project, agent] = await Promise.all([
+    prisma.membership.findFirst({
+      where: { userId: user.id, ...(superAdmin ? { organisation: { slug: { not: ZEDU_SLUG } } } : {}) },
+      select: { organisationId: true },
+    }),
+    prisma.projectMembership.findFirst({ where: { userId: user.id }, select: { id: true } }),
+    prisma.agent.findFirst({ where: { ownerUserId: user.id, revokedAt: null }, select: { id: true } }),
+  ]);
+  return {
+    account: true,
+    goal: Boolean(goal),
+    organisation: Boolean(membership),
+    project: Boolean(project),
+    agent: Boolean(agent),
+  };
 }
 
 /**
@@ -113,11 +140,37 @@ export async function recordOnboardingEvent(
   }
 }
 
+/**
+ * #getting-started: records a step a newcomer reaches inside their first project (the site saved, the first idea
+ * posted), once per person. Only people who signed up since the funnel began count (they have signup_completed),
+ * so older accounts doing the same thing don't skew it. Returns whether it was recorded now.
+ */
+export async function recordFirstProjectStep(
+  userId: string,
+  name: Extract<OnboardingEventName, "website_saved" | "first_idea_posted">,
+): Promise<boolean> {
+  try {
+    const [signedUp, already, row] = await Promise.all([
+      prisma.onboardingEvent.findFirst({ where: { userId, name: "signup_completed" }, select: { id: true } }),
+      prisma.onboardingEvent.findFirst({ where: { userId, name }, select: { id: true } }),
+      loadOnboarding(userId),
+    ]);
+    if (!signedUp || already) return false;
+    await prisma.onboardingEvent.create({ data: { userId, name, goal: row?.goal ?? null } });
+    return true;
+  } catch (error) {
+    // Analytics never breaks the action it measures.
+    logger.error("[onboarding] could not record project step", { name, error });
+    return false;
+  }
+}
+
 /** Whether the app shell shows the first-experience feedback prompt for this person. */
 export async function shouldShowFeedbackPrompt(userId: string, now = new Date()): Promise<boolean> {
-  const [row, feedback] = await Promise.all([
+  const [row, feedback, idea] = await Promise.all([
     loadOnboarding(userId),
     prisma.onboardingFeedback.findUnique({ where: { userId }, select: { id: true } }),
+    prisma.idea.findFirst({ where: { reporterId: userId }, select: { id: true } }),
   ]);
-  return feedbackPromptVisible(row, Boolean(feedback), now);
+  return feedbackPromptVisible(row, Boolean(feedback), now, { postedIdea: Boolean(idea) });
 }

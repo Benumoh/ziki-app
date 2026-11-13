@@ -3456,6 +3456,9 @@ enum OnboardingEventName {
   first_action
   feedback_submitted
   feedback_dismissed
+  /// #getting-started: the first project's site address saved, and the person's first idea posted.
+  website_saved
+  first_idea_posted
 }
 
 /// #onboarding: one row per person once the welcome flow has started. Existing

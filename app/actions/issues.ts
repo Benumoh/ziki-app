@@ -118,6 +118,7 @@ import { moveTo } from "@/lib/issue-substatus";
 import { entrySubstatus } from "@/lib/marketing/track";
 import { createFinding, isSecuritySeverity, placeholderTitle, PLACEHOLDER_DESCRIPTION, PLACEHOLDER_SUMMARY, isPrivateFinding, PRIVATE_FINDING_EDIT_MESSAGE } from "@/lib/security-findings";
 import { checkPostForSecrets } from "@/lib/security/secret-guard";
+import { recordFirstProjectStep } from "@/lib/onboarding-state";
 
 export type ActionResult = {
   error?: string;
@@ -413,6 +414,8 @@ export async function createBugAction(
     throw error;
   }
 
+  // #getting-started: a newcomer's first idea is a funnel step (recorded once per person).
+  await recordFirstProjectStep(userId, "first_idea_posted");
   revalidatePath("/[org]/[project]", "layout");
   redirect(ideaPath(refOf(targetProject), idea.number));
 }

@@ -37,6 +37,7 @@ export default async function OrganisationsPage({
     invite?: string | string[];
     error?: string | string[];
     notice?: string | string[];
+    open?: string | string[];
   }>;
 }) {
   const user = await requireUser();
@@ -46,7 +47,10 @@ export default async function OrganisationsPage({
     invite: inviteParam,
     error: errorParam,
     notice: noticeParam,
+    open: openParam,
   } = await searchParams;
+  // The welcome checklist links here with ?open=create or ?open=join (#onboarding).
+  const initialOpen = openParam === "create" || openParam === "join" ? openParam : null;
   const inviteId = typeof inviteParam === "string" ? inviteParam : "";
   const error = typeof errorParam === "string" ? errorParam : "";
   const notice = typeof noticeParam === "string" ? noticeParam : "";
@@ -85,7 +89,7 @@ export default async function OrganisationsPage({
             : "You're not in an organisation yet. Accept an invite, or create an organisation of your own."}
         </p>
       </div>
-      <OrganisationActions nameMax={ORGANISATION_NAME_MAX} />
+      <OrganisationActions nameMax={ORGANISATION_NAME_MAX} initialOpen={initialOpen} />
       </div>
 
       <div className="flex items-center justify-between rounded-[18px] border border-zk-border bg-gradient-to-r from-zk-surface to-zk-tint/20 p-4 sm:p-5">

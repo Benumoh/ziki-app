@@ -11,6 +11,9 @@ const FUNNEL: { name: OnboardingEventName; label: string }[] = [
   { name: "onboarding_completed", label: "Finished welcome" },
   { name: "onboarding_skipped", label: "Skipped welcome" },
   { name: "first_action", label: "Took a first action" },
+  // #getting-started: inside their first project.
+  { name: "website_saved", label: "Saved their website" },
+  { name: "first_idea_posted", label: "Posted a first idea" },
   { name: "feedback_submitted", label: "Sent feedback" },
 ];
 
@@ -57,7 +60,8 @@ export default async function FeedbackPage() {
         <h2 id="funnel-heading" className="text-base font-semibold text-zk-text">
           Signup funnel
         </h2>
-        <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {/* Seven steps and the average: two even rows of four. */}
+        <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {FUNNEL.map((step) => (
             <div key={step.name} className="rounded-xl bg-zk-tint p-3">
               <dt className="text-xs text-zk-text2">{step.label}</dt>

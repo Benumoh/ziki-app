@@ -1,34 +1,31 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth-helpers";
-import { loadOnboarding, onboardingAlwaysShown, startOnboarding } from "@/lib/onboarding-state";
-import { onboardingFinished, resumeStep } from "@/lib/onboarding-flow";
+import {
+  loadChecklistStatus,
+  loadOnboarding,
+  onboardingAlwaysShown,
+  startOnboarding,
+} from "@/lib/onboarding-state";
+import { onboardingFinished } from "@/lib/onboarding-flow";
 import { NOINDEX } from "@/lib/seo/site";
-import { WelcomeFlow } from "./welcome-flow";
+import { WelcomeChecklist } from "./welcome-checklist";
 
 export const metadata = { title: "Welcome", robots: NOINDEX };
 
 /**
- * #onboarding: the first-run welcome flow. /home sends newcomers here; it
- * resumes at the saved step, and anyone who finished or skipped it goes on to
- * the normal app instead of seeing it again.
+ * #onboarding: the first-run welcome checklist. /home sends newcomers here;
+ * anyone who finished or closed it goes on to the normal app instead of seeing
+ * it again. Each task is ticked from real data, so progress made elsewhere shows.
  */
 export default async function WelcomePage() {
   const user = await requireUser();
   const isNew = !(await loadOnboarding(user.id));
   const state = await startOnboarding(user.id);
-  const finished = onboardingFinished(state);
-  // Testing mode (ONBOARDING_ALWAYS_SHOW) replays the flow from the start for
-  // people who already finished it, instead of sending them on.
-  const replay = finished && onboardingAlwaysShown();
-  if (finished && !replay) redirect("/home");
+  // Testing mode (ONBOARDING_ALWAYS_SHOW) shows the checklist again to people
+  // who already finished it, instead of sending them on.
+  if (onboardingFinished(state) && !onboardingAlwaysShown()) redirect("/home");
 
+  const status = await loadChecklistStatus(user, state.goal);
   const firstName = (user.name ?? "").trim().split(/\s+/)[0] || null;
-  return (
-    <WelcomeFlow
-      firstName={firstName}
-      initialStep={replay ? 0 : resumeStep(state)}
-      initialGoal={state.goal}
-      isNew={isNew}
-    />
-  );
+  return <WelcomeChecklist firstName={firstName} initialGoal={state.goal} initialStatus={status} isNew={isNew} />;
 }

@@ -24,9 +24,9 @@ Screenshots are in this folder; "before" images are from `main` at `f514cc6b`.
 | 4 | High | The primary "Sign in" and "Create account" buttons were white on light blue (#95b5f9), about 2:1 contrast (WCAG AA needs 4.5:1). The shared Button's `bg-teal-700` won over the blue the forms asked for. | `components/login-form.tsx`, `components/signup-form.tsx` | Fixed (now #2e6fef, about 4.6:1) |
 | 5 | Medium | On phones and narrow windows the sign-in and sign-up forms sat below a full screen of marketing; keyboard focus also reached the brand panel first. | `app/(auth)/login/auth-split-frame.tsx` | Fixed (form first, same desktop look) |
 | 6 | Medium | No way to hear how a newcomer's first experience went, and no measure of where people drop off between signup and a first action. | — | Fixed (feedback prompt and funnel events) |
-| 7 | Medium | The floating "Lost? Ask Support" bubble covers the bottom of the sign-up form's "Create account" button on a 375 px phone. | `components/support-guide` | Open — outside this change; see screenshot `after-signup-mobile-form-first.jpg` |
-| 8 | Low | "Terms" and "Privacy Policy" under the auth forms look like links but aren't, and there are no such pages. | `AuthLegalNote` | Open — needs the real policy pages |
-| 9 | Low | The theme toggle on the auth pages overlaps the card's top-right corner on a 375 px phone. | `AuthSplitFrame` | Open |
+| 7 | Medium | The floating "Lost? Ask Support" bubble covers the bottom of the sign-up form's "Create account" button on a 375 px phone. | `components/support-guide` | Fixed: on the sign-in and sign-up pages the closed bubble shows only from 640 px up; those pages have Help in their footer |
+| 8 | Low | "Terms" and "Privacy Policy" under the auth forms look like links but aren't, and there are no such pages. | `AuthLegalNote` | Fixed: plain text, not link-styled (`a219da63`). Real policy pages are still to come |
+| 9 | Low | The theme toggle on the auth pages overlaps the card's top-right corner on a 375 px phone. | `AuthSplitFrame` | Fixed: phones get room above the card for the toggle (`a219da63`) |
 | 10 | Info | The Next.js dev badge overlaps "Your App" in the bottom bar. Development only; not shown in production. | — | No action |
 
 Reproduction for the fixed items: sign out, open `/signup` (or `/login` on a
@@ -42,17 +42,29 @@ says that continuing with Google creates an account and links to sign-up. Errors
 show next to the field and keep what was typed; the submit button is disabled
 while a request is in flight.
 
-**Welcome flow (`/welcome`).** Three steps with a progress bar and step labels:
-what Ziki is, "What would you like to do first?" (explore projects, contribute
-to issues, or work with AI agents), then the first action for that goal
-(Discover, Earn, or agent settings). Every step can be skipped. The step and
-goal are saved as the person moves, so leaving midway resumes there. `/home`
+**Welcome checklist (`/welcome`).** (It replaced the first three-step flow.) Five
+things to do first, in any order, with a progress bar: the account (already
+done), "What would you like to do first?" (explore projects, contribute to
+issues, or work with AI agents), join or create an organisation, find a
+project to work on, and set up an AI agent. Each is ticked from real data (a
+membership, a project, an agent), and the chosen goal's task is marked
+Suggested. Taking any task's button finishes the welcome; × skips it. `/home`
 sends someone here only while they haven't finished or skipped it, and only if
 they're new: accounts that existed before this change were marked as finished
 by the migration, and someone who joined through an invite already belongs to
-an organisation and goes straight to it. Focus moves to each step's heading.
+an organisation and goes straight to it.
 
-**Feedback prompt.** After the welcome flow, a small card asks "How was your
+**Into the first project (#getting-started).** Creating an organisation comes
+with its Web project and opens its Ideas page, where Get started carries on:
+the project (done), the site's address, a first idea, and an AI agent
+(optional). The agent step has the same name and the same page
+(`/settings/connect`) in both lists, and an agent set up from either one ticks
+both. Posting a first idea answers at once: the idea page says "Your first idea
+is in" and what happens to it next.
+
+**Feedback prompt.** Once there is something to rate (right after the
+person's first idea, or a day after the welcome for someone who hasn't posted
+one), a small card asks "How was your
 first experience with Ziki?" with a 1–5 rating; the optional "Was anything
 confusing or difficult to use?" box and Submit appear once a rating is chosen,
 so the card stays small. It is never a dialog and nothing waits on it. "Maybe
@@ -63,7 +75,9 @@ limited, stored with the chosen goal, and readable only by super admins at
 
 **Funnel events.** Stored in `OnboardingEvent` with only the user id, the event
 name and the goal: signup completed, onboarding started, completed, skipped,
-first action, feedback submitted and feedback dismissed. The same events
+first action, website saved and first idea posted (each once per person, and
+only for people who signed up since the funnel began), feedback submitted and
+feedback dismissed. The same events
 (plus "signup started" on the sign-up page) go to Google Tag Manager only when
 the visitor accepted analytics cookies. No names, emails, passwords or tokens
 are sent anywhere.
@@ -74,6 +88,8 @@ Migration `20270125000000_onboarding_feedback` adds `UserOnboarding`,
 `OnboardingFeedback` and `OnboardingEvent`, with database checks on the rating
 (1–5), the comment (at most 1,000 characters) and the step (0–2), and backfills
 every existing user as finished. All three cascade when a user is deleted.
+Migration `20270126000000_onboarding_project_events` adds the `website_saved`
+and `first_idea_posted` event names.
 
 ## Tests
 
@@ -83,6 +99,12 @@ unsaved goal, the feedback prompt's visibility and snoozes, completing once,
 a double-click finish, an invalid goal, skipping once, saving progress, a failed
 save, storing feedback for the signed-in user only, invalid ratings and comments,
 a duplicate submit, a failed submit, a signed-out request and the rate limit.
+
+`e2e/signup-flow.spec.ts` walks the whole first journey in a real browser at
+1280 px and 375 px: sign up, the welcome checklist, a goal, an organisation,
+Get started on the Ideas page (no feedback question yet), a first idea from a
+starter, then "Your first idea is in" and the feedback question, with no page
+scrolling sideways.
 
 Checked by hand in the browser: signup with a wrong confirmation, signup,
 each welcome step, leaving midway and resuming, a double-click finish (one set
