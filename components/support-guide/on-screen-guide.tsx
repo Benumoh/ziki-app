@@ -190,9 +190,13 @@ function OnScreenGuideContent() {
     // Above the support link (a small line at the bottom right), and above the agents bar where it is drawn
     // (#agents-dock, 76px tall), so the chat never sits behind either. Decided in CSS, not at render, so the
     // server and the browser draw the same thing.
+    // #onboarding: on a phone the closed bubble sat over the sign-up and sign-in buttons. Those pages have Help in
+    // their footer, so there the closed bubble shows only from sm up; an open chat or tour still shows everywhere.
     <aside
       aria-label="Customer Support Guide"
-      className="fixed bottom-14 right-4 z-50 flex flex-col items-end pointer-events-none select-none sm:right-6 lg:[body:has([data-dock-strip])_&]:bottom-[88px]"
+      className={`fixed bottom-14 right-4 z-50 flex flex-col items-end pointer-events-none select-none sm:right-6 lg:[body:has([data-dock-strip])_&]:bottom-[88px] ${
+        isAuthFormPage && mode === "avatar" ? "max-sm:hidden" : ""
+      }`}
     >
       {/* ---------------- STATE 3: INTERACTIVE SUPPORT DRAWER / CHAT ---------------- */}
       {mode === "chat" && (
