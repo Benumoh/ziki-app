@@ -186,7 +186,7 @@ export function IdeaChat({
                 }
               }}
               // The welcome's box opens two lines tall, so it reads as a place to write, not a search field.
-              className={`block max-h-[220px] w-full resize-none ${alwaysOpen ? "min-h-[120px]" : "min-h-[28px]"} border-0 bg-transparent p-1 text-[15px] leading-6 text-zk-text placeholder:text-zk-muted focus:outline-none`}
+              className={`block max-h-[220px] w-full resize-none ${alwaysOpen ? "min-h-[96px]" : "min-h-[28px]"} border-0 bg-transparent p-1 text-[15px] leading-6 text-zk-text placeholder:text-zk-muted focus:outline-none`}
             />
             {uploads.length ? (
               <ul className="m-0 mt-1 flex list-none flex-wrap gap-1.5 p-0">
@@ -202,7 +202,9 @@ export function IdeaChat({
             {/* While the idea goes to Claude to be written up, show the work happening. */}
             {pending ? <ClaudeWorking className="mt-2" /> : null}
             {error ? <p role="alert" className="m-0 mt-1 px-1 text-xs text-zk-bad-fg">{error}</p> : null}
-            <div className={`flex items-center justify-between ${alwaysOpen ? "-mx-2 mt-3 border-t border-zk-border px-0 pt-3" : "mt-2"}`}>
+            {/* alwaysOpen: the divider runs the box's full width (-mx-5 cancels its padding); px-3 keeps the
+                buttons where they were, the paperclip in line with the text above. */}
+            <div className={`flex items-center justify-between ${alwaysOpen ? "-mx-5 mt-3 border-t border-zk-border px-3 pt-3" : "mt-2"}`}>
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
