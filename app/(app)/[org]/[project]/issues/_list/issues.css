@@ -6,6 +6,9 @@
   padding: 0 24px 24px;
   color: var(--zk-text);
 }
+/* No toolbar on top (the empty Ideas welcome, #ideas-welcome): the top gets the same padding as the sides,
+   so the first card (Getting started, the site panel) doesn't sit against the edge. */
+.issues-page.issues-page--bare { padding-top: 24px; }
 /* A thin top row: breadcrumb on the left, tools on the far right, a line under it edge to edge. */
 .issues-page .issues-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px 8px; margin-inline: -24px; padding: 10px 24px; border-bottom: 1px solid var(--zk-divider); }
 .issues-heading > div:first-child { display: contents; }
@@ -71,6 +74,7 @@
 .issues-results > nav { order: 2; }
 @media (max-width: 1279px) {
   .issues-page { padding: 0 20px 20px; }
+  .issues-page.issues-page--bare { padding-top: 20px; }
   .issues-page .issues-heading { margin-inline: -20px; padding: 10px 20px; }
   .issues-row, .issues-table-heading { gap: 14px; padding-left: 16px; padding-right: 16px; }
 }
